@@ -1,6 +1,9 @@
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.in by autoheader.  */
 
+/* Define to the version of this package. */
+#define PACKAGE_VERSION "0.4"
+
 /* Do we want configuration files? */
 #define ENABLE_RC 1
 
@@ -12,9 +15,6 @@
 
 /* Do we have zlib? */
 #define HAVE_ZLIB 1
-
-/* Define to the version of this package. */
-#define PACKAGE_VERSION "0.03"
 
 /* Define to empty if `const' does not conform to ANSI C. */
 /* #undef const */
