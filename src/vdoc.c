@@ -190,7 +190,8 @@ int pages_number(page_list_head * p_doc,int x, int y, int start,char * text, cha
 	}
 	for(page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
 		asprintf(&out,text,start++);
-		doc_draw_to_page_text(page,&poz,out,size,font);
+        if (start>1)
+		    doc_draw_to_page_text(page,&poz,out,size,font);
 		free(out);
 	}
 	return 0;
