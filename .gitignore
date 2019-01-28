@@ -1,0 +1,6 @@
+# Compiled Libraries
+*.so
+*.o
+
+# Compiled Binaries
+pspdftool
