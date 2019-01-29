@@ -460,9 +460,6 @@ pdf_object *  pdf_read_object_form_file(MYFILE *  f, int major, int minor, pdf_o
 				message(FATAL,"Read object %d %010ld %05d\n",major,offset, minor);
 			}
 			
-			if (!isIndirect(&pom_object)){
-				message(FATAL, "Readed object isn't indirect\n");
-			}
 			if (pom_object.val.reference.major!=major 
 			|| pom_object.val.reference.minor!=minor){
 				message(FATAL, "Major or minor number in object are mismatched.\n");
@@ -689,6 +686,7 @@ static int pdf_get_boundaries(dimensions * dim, pdf_object * obj){
 }
 
 static int pdf_set_boundaries(dimensions * dim, pdf_object * obj){
+    debug("pdf_set_boundaries(%d)\n", dim->left.x);
 	char * str;
 	if (dim==NULL || obj==NULL){
 		return -1;
@@ -876,7 +874,7 @@ int getPdfTrailer(page_list_head *  p_doc, MYFILE * f, char * line,long offset){
 		    message(FATAL,"\"startxref\" not found\n");
                   return -1;
              }
-	     for (p = buf+i+9; isspace(*p); ++p) ;
+	     for (p = buf+i+9; isspace(*p); ++p)
                   offset = atol((char*)p);
 	}
 
@@ -1003,7 +1001,7 @@ int putPdfPages(page_list_head * p_doc){
 	for (page=p_doc->next, count=0;page!=(page_list *)p_doc;page=page->next,++count){
 		nodes[count]=get_page_content(page)->major;
 		get_object_(pobj,get_pdf_handle(p_doc),get_page_content(page)->major,get_page_content(page)->minor);
-		pdf_set_boundaries(&page->page->paper,pdf_get_dict_name_value(pobj,"MediaBox"));
+ 		pdf_set_boundaries(&page->page->paper,pdf_get_dict_name_value(pobj,"MediaBox"));
 
 		if (!isdimzero(page->page->bbox)){
 			pdf_set_boundaries(&page->page->bbox,pdf_add_dict_name_value(pobj,"TrimBox"));
@@ -1222,6 +1220,7 @@ void pdf_structure_delete(pdf_doc_handle * p_pdf){
 	return;
 }
 static int pdf_page_to_xobj(page_handle * pg_handle){
+    debug("pdf_page_to_xobj\n");
 	int major;
 	pdf_object * new_page, * new_page_contents, * new_page_xobject, * contents, * pg, * pom, * xobj_val;
 	pdf_page_handle * page = (pdf_page_handle *)pg_handle->page;
@@ -1414,6 +1413,7 @@ int pdf_merge_stream(pdf_doc_handle * p_pdf,pdf_object * stream1, pdf_object * s
 }
 
 int pdf_page_transform(page_handle * pg_handle, transform_matrix * matrix){
+    debug("pdf_page_transform(%d)\n", pg_handle->paper.left.x);
 	int major;
 	pdf_object * new_page, * page1, * pom, * stream1;
 	char * ct;
@@ -1436,7 +1436,7 @@ int pdf_page_transform(page_handle * pg_handle, transform_matrix * matrix){
 		return 0;
 	}
 	
-	asprintf(&ct,"q %.2f %.2f %.2f %.2f %.2f %.2f cm ",   (*matrix)[0][0], (*matrix)[0][1], 
+	asprintf(&ct,"q %.2f %.2f %.2f %.2f %.2f %.2f cm\n",   (*matrix)[0][0], (*matrix)[0][1], 
 								 (*matrix)[1][0], (*matrix)[1][1], 
 								 (*matrix)[2][0], (*matrix)[2][1]);
 	major = pdf_merge_stream(p_pdf,stream1,NULL,ct," Q",NULL);

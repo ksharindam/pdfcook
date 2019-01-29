@@ -565,6 +565,7 @@ int update_global_dimensions(page_list_head * p_doc){
 }
 
 int doc_page_transform(page_list * pg_handle, transform_matrix * matrix){      /*transformace stranky pomoci transformacni matice*/
+    debug("doc_page_transform(%d)\n", pg_handle->page->paper.left.x);
 	pg_handle->page=page_handle_copy_w(pg_handle->page);
 	/*printf("%d %d %d %d\n",pg_handle->page->bbox.left.x,pg_handle->page->bbox.left.y,pg_handle->page->bbox.right.x,pg_handle->page->bbox.right.y);*/
 	transform_dimensions(&pg_handle->page->bbox,matrix);
@@ -847,6 +848,11 @@ void transform_dimensions(dimensions * dim, transform_matrix * matrix){
 	min.y=min(min.y,p3.y);
 	min.y=min(min.y,p4.y);
 
+    // bottom-left corner of the page must be (0,0)
+    max.x = max.x - min.x;
+    max.y = max.y - min.y;
+    min.x = 0;
+    min.y = 0;
 	copy_coordinate(&(dim->right), &max);
 	copy_coordinate(&(dim->left), &min);
 }

@@ -156,7 +156,7 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 		case PDF_T_BDICT:
 			p_obj->val.dict.next=p_obj->val.dict.prev=(pdf_dict*)&(p_obj->val.dict);
 			p_obj->type=PDF_OBJ_DICT;
-			while (pdf_get_object(f,&t_obj,xref,last_tok)==0 && isName(&t_obj)){
+			while (pdf_get_object(f,&t_obj,xref,last_tok)==0){
 				pom_dict=(pdf_dict *) malloc(sizeof(pdf_dict));
 				if (pom_dict==NULL){
 					return -1;

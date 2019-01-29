@@ -1,9 +1,8 @@
 /**
  * \file page_list.h
- * \brief Knihovna pro praci se seznamem stranek.
- * Jednotlive stranky se uchovavaji ve spojovem seznamu.
- * Seznam ma hlavu \a doc_page_list_head a jenotlive jeho prvky jsou \a doc_page_list.
- *
+ * Workshop library with a list of pages.
+ * Individual pages are kept in the linked list.
+ * The list of my head doc_page_list_head and all its elements are doc_page_list.
  * */
 #ifndef _PAGE_LIST_H_
 #define _PAGE_LIST_H_
@@ -183,10 +182,7 @@ page_list * page_new_ext(page_list * from,int doc_type, doc_handle * doc);
  */
 int  page_delete(page_list * from);
 
-/** \brief spocita maximalni rozmery z \a d1 a \a d2 a vrati je v \a d1
- * \param d1 rozmery
- * \param d2 rozmery
- */
+/** calculates maximum dimensions of d1 and d2 and returns in d1 */
 void max_dimensions(dimensions * d1, dimensions *d2);
 
 #endif

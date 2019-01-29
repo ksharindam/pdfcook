@@ -82,3 +82,4 @@ int asprintf(char **strp, const char *fmt, ...){
 }
 #endif
 
+void _debug(char *c, ...) {}

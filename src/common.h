@@ -38,6 +38,12 @@ char * skipwhspaces(char * s);
 char * strtoupper(char * s);
 char * strlower(char * s);
 
+#ifdef DEBUG
+#define debug printf
+#else
+#define debug _debug
+#endif
+void _debug(char *, ...);
 /**
 	\brief Funkce prevede string na ID dle vstupniho pole \a from
 */

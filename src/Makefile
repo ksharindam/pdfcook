@@ -2,7 +2,7 @@ SOURCES = cmdexec.c fileio.c page_list.c pdf_lib.c ps_lib.c vldoc.c common.c mai
     pdf_doc.c pdf_parser.c vdoc.c dummydoc.c main_page.c pdf_filters.c ps_doc.c vdocerror.c
 OBJS = $(SOURCES:.c=.o)
 CC = gcc
-CFLAGS = -Wall -g -s -O2
+CFLAGS = -Wall -O2
 INCLUDES =
 LIBS = -lm -lz
 

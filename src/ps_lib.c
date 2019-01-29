@@ -580,7 +580,7 @@ static int getDefaults(page_list_head * doc,MYFILE * f,char * iobuffer,long * fp
 		return 0;
 	}
 	/*nalezneme endidefaults*/
-	while (((*fpoz=myfgets(line,LLEN,f,NULL))!=EOF) && *fpoz!=EOF && ((t=decodeDSC(line))!=edefaults) && (t!=eof));
+	while (((*fpoz=myfgets(line,LLEN,f,NULL))!=EOF) && *fpoz!=EOF && ((t=decodeDSC(line))!=edefaults) && (t!=eof))
 		dsc->defaults.end=*fpoz;
 
 	if (t==edefaults){
