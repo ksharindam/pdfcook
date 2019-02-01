@@ -96,44 +96,29 @@ int pages_scaleto(page_list_head * p_doc, dimensions * _paper, double top, doubl
 	return 0;
 }
 
-int pages_rotate(page_list_head * p_doc, int angle){	
-	transform_matrix  matrix = {{1,0,0},{0,1,0},{0,0,1}};
-#ifdef MOVE_UP
-	transform_matrix  post_matrix = {{1,0,0},{0,1,0},{0,0,1}};
-#endif
-	int x = p_doc->doc->paper.right.x;
-	int y = p_doc->doc->paper.right.y;
-	update_global_dimensions(p_doc);
+int pages_rotate(page_list_head * p_doc, int angle){
+    int x,y;
 	for(;angle<0;angle+=360);
-	switch (angle%360){
-		case 180:
-			transform_matrix_move_xy(&matrix,x,y);
-			break;
-		case 90:
-			transform_matrix_move_xy(&matrix,0,x);
-			break;
-		case 270:
-			transform_matrix_move_xy(&matrix,y,0);
-			break;
+	page_list * page;
+	for (page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
+	    transform_matrix matrix = {{1,0,0},{0,1,0},{0,0,1}};
+	    x = page->page->paper.right.x;
+	    y = page->page->paper.right.y;
+	    switch (angle%360){
+		    case 180:
+			    transform_matrix_move_xy(&matrix,x,y);
+			    break;
+		    case 90:
+			    transform_matrix_move_xy(&matrix,0,x);
+			    break;
+		    case 270:
+			    transform_matrix_move_xy(&matrix,y,0);
+			    break;
+	    }
+	    transform_matrix_rotate(&matrix,angle);
+		doc_page_transform(page,&matrix);
 	}
-	transform_matrix_rotate(&matrix,angle);
-	pages_transform(p_doc,&matrix);
 	update_global_dimensions(p_doc);
-#ifdef MOVE_UP
-	/*move up rotated page*/
-	if ((p_doc->doc->bbox.left.x<0) || (p_doc->doc->bbox.left.y<0)) {
-	
-		if (p_doc->doc->bbox.left.x<0){
-			transform_matrix_move_xy(&post_matrix,-1 * p_doc->doc->bbox.left.x,0);
-			
-		}
-		if (p_doc->doc->bbox.left.y<0){
-			transform_matrix_move_xy(&post_matrix, 0,-1 * p_doc->doc->bbox.left.y);
-		}
-		pages_transform(p_doc,&post_matrix);
-	}
-#endif
-		/*printf("<d>%d %d %d %d\n",p_doc->doc->bbox.left.x,p_doc->doc->bbox.left.y,p_doc->doc->bbox.right.x,p_doc->doc->bbox.right.y);*/
 	return 0;
 }
 

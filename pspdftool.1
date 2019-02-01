@@ -1,11 +1,11 @@
-.TH pspdftool 1 "2007-09-18"
+.TH pspdftool 1 "2019-01-30"
 .SH NAME
 pspdftool -  tool for prepress preparation of PDF and PostScript documents
 
 .SH SYNOPSIS
 .B pspdftool
 [
-.B \-f\fIfile\fR name
+.B \-f \fIfilename\fR
 ] [
 .B \-h\fIhelp\fR
 ]
@@ -45,20 +45,26 @@ follow the syntax:
 .TP
 page selection
 .TP
-.I number
+.B number
 page form begin of the list
 .TP
-.I -number
+.B -number
 page from end of the list
 .TP
-.I number..number
-page range from begin of the list
+.B number..number
+page range from begin of the list. e.g - {8..20}
 .TP
-.I -number..number
+.B -number..number
 page range from end of the list
 .TP
-.I $
+.B $
 end page in list
+.TP
+.B ?
+odd set of pages
+.TP
+.B +
+even set of pages
 .RE
 .sp
 .| command
@@ -82,62 +88,100 @@ save list to file
 .RE
 Commands for working with pages selections:
 .RS
-.TP 12
+
+.TP
+.B select
+.I {page_ranges}
+
+select pages to save
+
+.TP
 .B modulo
 .I (pages, half, round){page_ranges}
+
+special type of select pages
+
 .TP
 .B book
+
 .TP
-.B select{page_ranges}
+.B apply
+.I {page_range  commands}
+
 .TP
-.B apply{page_ranges}
-.TP
-.B new{page_ranges}
+.B new
+.I {page_ranges}
 
 add new page at the end of list
 
 .TP
 .B del
 
-
-delete list
-
-.TP
-.B scale
-.I (scale=<real>)
-
-scale pages in the list
+delete pages (use inside apply command)
 
 .RE
 Command for pages' content transform:
 .RS
 .TP 12
+.B matrix
+.I (a,b,c,d,e,f)
+
+transform by 3x3 matrix whose last 3 components are [0,0,1]
+
+.TP
+.B rotate
+.I (angle)
+
+rotate page clockwise
+
+.TP
+.B move
+.I (x, y)
+
+move page to right by x and to top by y
+
+.TP
 .B scaleto
 .I (paper, top, right, bottom, left)
 
-fit page to paper
+fit page to paper size. eg - scaleto(a4)
 
 .TP
 .B scaleto2
-.I (x, y, top, right, bottom, left)
+.I (w, h, top, right, bottom, left)
+
+scale to particular width and height and margins
+
+.TP
+.B scale
+.I (scale)
+
+scale pages by specified scale factor
+
 .TP
 .B flip
-.I (mode=<id>)
+.I (mode)
 
-horizontal | vertical
+mode is horizontal | vertical. e.g - flip(vertical)
 
 .TP
 .B number
 .I (x, y, start, text, font, size)
 
-add numbers to pages
+add numbers to pages. e.g - number(start=3)
 
 .TP
 .B crop
 .I (paper)
+
+crop pages to specified paper size
+
 .TP
 .B crop2
 .I (lx, ly, hx, hy)
+
+crop pages to the exact size
+
 .TP
 .B paper
 .I (paper)
@@ -180,21 +224,6 @@ write text to page
 .I (lx,ly,hx,hy,width)
 
 draw line to page
-
-.TP
-.B rotate
-.I (angle)
-
-rotate page
-.TP
-.B move
-.I(x, y)
-.TP
-.B matrix
-.I(a,b,c,d,e,f)
-
-
-transform by matrix
 
 .RE
 Misc commands:
@@ -258,12 +287,12 @@ select first five pages and last one from document
 .ce
 .B select{1..5 -1}
 .sp
-delete last page from document
+reverse page in list
 .sp
 .ce
 .B select{$..1}
 .sp
-reverse page in list
+delete last page from document
 .sp
 .ce
 .B apply{-1 del}

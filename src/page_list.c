@@ -172,7 +172,7 @@ void pages_list_insert_page(page_list_head * where, page_list * what, page_list 
 	update_page_info(where->doc,what->page);
 }
 
-/*prevedeni cisla stranky na ukazatel na stranku*/
+/*Convert the page number to the pointer on the page*/
 page_list * page_num_to_ptn(page_list_head * plist, int number){
 	page_list * start;
 	int i;

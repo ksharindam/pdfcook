@@ -37,7 +37,9 @@ enum {  CMD_TOK_UNKNOWN,
 	CMD_TOK_RCPAR,
 	CMD_TOK_MINUS,
 	CMD_TOK_MEASURE,
-	CMD_TOK_DOLLAR
+	CMD_TOK_DOLLAR,
+    CMD_TOK_ODD,
+    CMD_TOK_EVEN
 };
 
 struct id_str{
@@ -123,6 +125,7 @@ typedef struct cmd_page_list{
 	struct cmd_page_list * prev;
 	long range[2];
 	int negativ_range;
+    int page_set;   // 0=all, 1=odd, 2=even set
 	cmd_ent_struct_head commands;
 }cmd_page_list;
 
@@ -294,20 +297,20 @@ static param  cmd_spaper_params[] = {{"name",CMD_TOK_ID,CMD_TOK_UNKNOWN,0,0,NULL
 #define fill_params(p) p,sizeof(p)/sizeof(param)
 /**definice prikazu*/
 static cmd_entry cmd_commands[]={
-	{"apply","",cmd_apply,NULL,0,1},
-	{"bbox","recalculate bbox on each page by GS",cmd_bbox,NULL,0,0},
+	{"apply","Apply command(s) to these pages",cmd_apply,NULL,0,1},
+	{"bbox","Recalculate bbox on each page by GS",cmd_bbox,NULL,0,0},
 	{"book", "",cmd_book,NULL,0,0},
-	{"cmarks","add printing marks",cmd_cmarks,fill_params(cmd_cmarks_params),0},
+	{"cmarks","Add printing marks",cmd_cmarks,fill_params(cmd_cmarks_params),0},
 	{"crop","",cmd_crop,fill_params(cmd_crop_params),0},
 	{"crop2","",cmd_crop2,fill_params(cmd_crop2_params),0},
-	{"del","delete list",cmd_del,NULL,0,0},
+	{"del","Delete list",cmd_del,NULL,0,0},
 	{"duplex","",cmd_duplex,fill_params(cmd_duplex_params),0},
 	{"flip","horizontal | vertical",cmd_flip,fill_params(cmd_flip_params),0},
 	{"line","draw line to page",cmd_line,fill_params(cmd_line_params),0},
 	{"matrix","transform by matrix",cmd_matrix,fill_params(cmd_matrix_params),0},
 	{"merge","merge list to one page",cmd_merge,NULL,0},
 	{"modulo", "",cmd_modulo,fill_params(cmd_modulo_params),1},
-	{"move","",cmd_move,fill_params(cmd_move_params),0},
+	{"move","move or translate page by x and y points",cmd_move,fill_params(cmd_move_params),0},
 	{"new","add new page at the end of list",cmd_new,NULL,0,1},
 	{"norm","normalize  pages",cmd_norm,fill_params(cmd_norm_params),0},
 	{"number","add numbers to pages",cmd_number,fill_params(cmd_number_params),0},
@@ -316,11 +319,11 @@ static cmd_entry cmd_commands[]={
 	{"paper","",cmd_paper,fill_params(cmd_paper_params),0},
 	{"paper2","",cmd_paper2,fill_params(cmd_paper_params2),0},
 	{"read","append file at the end of list",cmd_read,fill_params(cmd_read_params),0},
-	{"rotate","rotate page",cmd_rotate,fill_params(cmd_rotate_params),0},
-	{"scale","scale pages in the list",cmd_scale,fill_params(cmd_scale_params),0},
+	{"rotate","Rotate page",cmd_rotate,fill_params(cmd_rotate_params),0},
+	{"scale","Scale pages",cmd_scale,fill_params(cmd_scale_params),0},
 	{"scaleto","",cmd_scaleto,fill_params(cmd_scaleto_params),0},
 	{"scaleto2","",cmd_scaleto2,fill_params(cmd_scaleto2_params),0},
-	{"select","",cmd_select,NULL,0,1},
+	{"select","Select pages to save",cmd_select,NULL,0,1},
 	{"text","write text to page",cmd_text,fill_params(cmd_text_params),0},
 	{"write","save list to file",cmd_write,fill_params(cmd_write_params),0},
 	{"spaper","define new paper format",cmd_spaper,fill_params(cmd_spaper_params),0},
@@ -460,7 +463,7 @@ static int cmd_expand_macro( cmd_ent_struct_head * cmd_tree, def_list * def, cmd
 			argument = cmd_expand_param(cmd, param_pos, arg_ent[i].pparam->name);
 			if (argument == NULL) {
 				if (arg_ent[i].pparam->type == CMD_TOK_UNKNOWN) {
-					message(WARN,">Command \"def\" has feuew params at line %d column %d.\n",cmd->row,cmd->column);
+					message(WARN,">Command \"def\" has few params at line %d column %d.\n",cmd->row,cmd->column);
 					return -1;
 				}
 				cmd_print_arg_exp(arg_ent[i].pparam,buf, BUF_LEN);
@@ -508,7 +511,8 @@ static double get_unit_val(char * unit){
 	return 0;
 }
 
-static cmd_page_list * cmd_add_range(cmd_ent_struct * cmd, long begin, long end, int negativ_range){
+static cmd_page_list * cmd_add_range(cmd_ent_struct * cmd, long begin, long end, int negativ_range, int page_set)
+{
 	cmd_page_list * new_range = (cmd_page_list*) malloc(sizeof(cmd_page_list));
 
 	if (new_range == NULL) {
@@ -525,6 +529,7 @@ static cmd_page_list * cmd_add_range(cmd_ent_struct * cmd, long begin, long end,
 	new_range->range[0]=begin;
 	new_range->range[1]=end;
 	new_range->negativ_range=negativ_range;
+    new_range->page_set=page_set;
 	new_range->commands.next=new_range->commands.prev=(cmd_ent_struct *)&(new_range->commands);
 	new_range->next=(cmd_page_list *)&(cmd->range);
 	new_range->prev=cmd->range.prev;
@@ -532,6 +537,11 @@ static cmd_page_list * cmd_add_range(cmd_ent_struct * cmd, long begin, long end,
 	new_range->prev->next=new_range;
 	return new_range;
 }
+
+/*  order page ranges (converts 1-5 or 5-1 to 1-5 range)
+    for even/odd set splits range to individual page ranges
+    e.g - for odd set convert 1-6 to 1-1, 3-3, 5-5 ranges
+*/
 static int cmd_sort_range(cmd_page_list_head * sorted,cmd_page_list_head * unsorted, int pages_count){
 	cmd_page_list * it1, *it2,*pom;
 	int tmp;
@@ -569,17 +579,36 @@ static int cmd_sort_range(cmd_page_list_head * sorted,cmd_page_list_head * unsor
 			pom->range[0]=pom->range[1];
 			pom->range[1]=tmp;
 		}
-		/*insert sort*/
-		for(it2=sorted->next;it2!=(cmd_page_list *)sorted && it2->range[0]>pom->range[0];it2=it2->next);
-		pom->next=it2;
-		pom->prev=it2->prev;
-		pom->next->prev=pom;
-		pom->prev->next=pom;
+		/*insert sorted range*/
+        it2=sorted->next;
+        if (it1->page_set!=0){ // split pages for even/odd set
+            int first = pom->range[0]; 
+            int last = pom->range[1];
+            pom->range[1] = first;
+            for (;first<=last;first++){
+                if (first%2+1==it1->page_set) continue; //skip even pages for odd set
+		        pom=(cmd_page_list *)malloc(sizeof(cmd_page_list));
+		        memcpy(pom,it1,sizeof(cmd_page_list));
+                pom->range[0]=first;
+                pom->range[1]=first;
+		        pom->next=it2;
+		        pom->prev=it2->prev;
+		        pom->next->prev=pom;
+		        pom->prev->next=pom;
+            }
+        }
+        else {
+		    pom->next=it2;
+		    pom->prev=it2->prev;
+		    pom->next->prev=pom;
+		    pom->prev->next=pom;
+        }
 	}
 	return 0;
 }
 
 static int cmd_get_pages_args_cmd_new(MYFILE * f, cmd_ent_struct * cmd, cmd_tok_struct * p_tok){
+    debug("cmd_get_pages_args_cmd_new()\n");
 	cmd_page_list * page_range;
 	if (p_tok->token!=CMD_TOK_LCPAR){
 		return 0;
@@ -587,7 +616,7 @@ static int cmd_get_pages_args_cmd_new(MYFILE * f, cmd_ent_struct * cmd, cmd_tok_
 	cmd_get_token(f,p_tok);
 	switch (p_tok->token){
 		case CMD_TOK_ID:
-			page_range=cmd_add_range(cmd,1,1,0);
+			page_range=cmd_add_range(cmd,1,1,0,0);
 			cmd_make_tree(f,&(page_range->commands),p_tok);
 			if (p_tok->token==CMD_TOK_RCPAR){
 				cmd_get_token(f,p_tok);
@@ -603,8 +632,9 @@ static int cmd_get_pages_args_cmd_new(MYFILE * f, cmd_ent_struct * cmd, cmd_tok_
 	return 0;
 }
 static int cmd_get_pages_args(MYFILE * f, cmd_ent_struct * cmd, cmd_tok_struct * p_tok){
+    debug("cmd_get_pages_args()\n");
 	cmd_page_list * page_range;
-	int negativ_range=0;
+	int negativ_range=0, page_set=0;
 	long r_begin, r_end;
 	/*this part is not mandatory*/
 	if (p_tok->token!=CMD_TOK_LCPAR){
@@ -624,7 +654,12 @@ static int cmd_get_pages_args(MYFILE * f, cmd_ent_struct * cmd, cmd_tok_struct *
 				}
 			case CMD_TOK_INT:
 			case CMD_TOK_DOLLAR:
+            case CMD_TOK_ODD:
+            case CMD_TOK_EVEN:
 				r_begin=r_end=p_tok->number;
+                if (p_tok->token==CMD_TOK_ODD) {page_set=1; r_begin=1;}
+                else if (p_tok->token==CMD_TOK_EVEN) {page_set=2; r_begin=1;}
+                else {page_set=0;}
 				cmd_get_token(f,p_tok);
 				if (p_tok->token==CMD_TOK_DOTDOT){
 					cmd_get_token(f,p_tok);
@@ -636,9 +671,9 @@ static int cmd_get_pages_args(MYFILE * f, cmd_ent_struct * cmd, cmd_tok_struct *
 					}
 					cmd_get_token(f,p_tok);
 				}
-				page_range=cmd_add_range(cmd,r_begin,r_end,negativ_range);
+				page_range=cmd_add_range(cmd,r_begin,r_end,negativ_range,page_set);
 				negativ_range=0;
-				/*prikazy pro dannou skupinu stranek*/
+				/*commands for a given group of pages*/
 				if (p_tok->token==CMD_TOK_ID){
 					/*if (*/cmd_make_tree(f,&(page_range->commands),p_tok);/*==-1){
 					return -1;
@@ -1067,6 +1102,7 @@ static int cmd_make_tree(MYFILE * f, cmd_ent_struct_head * cmd_tree, cmd_tok_str
 }
 
 static int cmd_exec_command_(page_list_head * p_doc,cmd_ent_struct * cmd,int index, int test){
+    debug("cmd_exec_command_()\n");
 	int i;
 	int params_count=cmd_commands[index].params_count;
 	cmd_param * argument;
@@ -1125,7 +1161,8 @@ static int cmd_exec_command_(page_list_head * p_doc,cmd_ent_struct * cmd,int ind
 					break;
 				default:
 						/*bad argument type*/
-						message(FATAL,"Param %d of command %s is incompatible type, at line %d column %d.\n",i+1,cmd_commands[index].str, cmd->row, cmd->column);
+						message(FATAL,"Param %d of command %s is incompatible type, at line %d column %d.\n",
+                                i+1,cmd_commands[index].str, cmd->row, cmd->column);
 						return -1;
 				}
 				break;
@@ -1271,6 +1308,7 @@ static int cmd_exec_command(page_list_head * p_doc, cmd_ent_struct * cmd, int te
 }
 
 static int cmd_exec_tree(page_list_head * p_doc,cmd_ent_struct_head * cmd_tree, int test){
+    debug("cmd_exec_tree()\n");
 	cmd_ent_struct  * pom=cmd_tree->next;
 	cmd_ent_struct * end=pom->prev;
 	while (pom!=end){
@@ -1345,6 +1383,7 @@ static void cmd_free_tree(cmd_ent_struct_head * cmd_tree){
 }
 
 int cmd_preexec(cmd_ent_struct_head * cmd_tree, MYFILE * f){
+    debug("cmd_preexec()\n");
 	cmd_tok_struct token;
 	cmd_get_token(f,&token);
 	if (cmd_make_tree(f,cmd_tree,&token)==-1 || cmd_exec_tree(NULL,cmd_tree, 1)==-1){
@@ -1356,6 +1395,7 @@ int cmd_preexec(cmd_ent_struct_head * cmd_tree, MYFILE * f){
 }
 
 int cmd_exec(page_list_head * p_doc, cmd_ent_struct_head * cmd_tree ,MYFILE * f){
+    debug("cmd_exec()\n");
 	if (cmd_exec_tree(p_doc,cmd_tree, 0)==-1){
 		cmd_free_tree(cmd_tree);
 		message(FATAL,"There were some errors during executing commands\n");
@@ -1535,6 +1575,14 @@ static int cmd_get_token(MYFILE * f,cmd_tok_struct * structure){
 			}
 		case '$':
 			structure->token=CMD_TOK_DOLLAR;
+			structure->number=-1;
+			return 0;
+		case '?':
+			structure->token=CMD_TOK_ODD;
+			structure->number=-1;
+			return 0;
+		case '+':
+			structure->token=CMD_TOK_EVEN;
 			structure->number=-1;
 			return 0;
 		case EOF:
@@ -1718,7 +1766,7 @@ static int cmd_modulo(page_list_head * p_doc, param params[], cmd_page_list_head
 	return 0;
 }
 
-/*V teto fci pristupuji lowlevel do struktury, asi by se to nemelo delat, ale je to rychlejsi.*/
+/*In this case I approach the low level into the structure, probably should not do it, but it is quicker.*/
 static int cmd_apply(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
 	page_list_head selected;
 	page_list * begin, * end;
@@ -1730,7 +1778,6 @@ static int cmd_apply(page_list_head * p_doc, param params[], cmd_page_list_head 
 		/*error during sorting*/
 		return -1;
 	}
-	
 	selected.id=M_ID_DOC_PAGE_LIST_HEAD;
 	selected.doc=p_doc->doc;
 	for(range=sorted_pages.next;range!=(cmd_page_list*)&(sorted_pages);range=range->next){
@@ -1744,7 +1791,7 @@ static int cmd_apply(page_list_head * p_doc, param params[], cmd_page_list_head 
 		if (begin==NULL || end==NULL){
 			return -1;
 		}
-		/*TODO: odstranit zbytecne kopirovani seznamu*/
+		/*TODO: remove unnecessary duplication of the list*/
 		count=pages_count(p_doc);
 		count=count-range->range[0]-range->range[1]+1;
 		pages_count(p_doc)=pages_count(p_doc)-count;
@@ -1758,7 +1805,7 @@ static int cmd_apply(page_list_head * p_doc, param params[], cmd_page_list_head 
 		if (cmd_exec_tree(&selected, &(range->commands), 0)==-1){
 			return -1;
 		}
-		/*TODO: odstranit zbytecne kopirovani seznamu*/
+		/*TODO: remove unnecessary duplication of the list*/
 		if (selected.next!=(page_list *) &selected){
 			end->prev->next=selected.next;
 			selected.next->prev=end->prev;

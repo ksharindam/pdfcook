@@ -2,9 +2,9 @@
 #define _VLDOC_H_
 /**
  * \file vldoc.h
- * \brief Knihovna pro praci s implementacne zavislou casti dokumentu.
- * Pro kazdy format dokumentu je potreba implementovat urcite rozhrani.
- * Nacteni dokumentu, jeho ulozeni, prace s jeho obsahem..
+ * Working library with the implementation part of the document
+ * For each document format, you need to implement a specific interface.
+ * Retrieve the document, store it, work with its contents
  *
  * */
 
@@ -12,11 +12,11 @@
 #include "page_list.h"
 #include "vdoc.h"
 /*
- * vdoc.h (virtual document high implementation)
- * vldoc.h (virtual low implementation document)
- * psdoc.h (implementace postscriptoveho rozhrani)
- * pdfdoc.h (implementace pdf rozhrani)
- * cmdexec.h (prikazovy interpret) 
+ * vdoc.h (virtual document higher implementation)
+ * vldoc.h (virtual lower implementation document)
+ * psdoc.h (postscript implementation)
+ * pdfdoc.h (pdf implementation)
+ * cmdexec.h (command interpreter) 
  */
 
 /**maximalni delka koncovky souboru*/

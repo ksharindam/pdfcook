@@ -411,7 +411,7 @@ static long putHeader(page_list_head * p_doc, FILE * in, FILE * out){
 	if (p_doc->doc->orient!=DOC_O_UNKNOWN){
 		p_doc->doc->orient=p_doc->doc->orient==DOC_O_SEASCAPE?DOC_O_LANDSCAPE:p_doc->doc->orient;
 		p_doc->doc->orient=p_doc->doc->orient==DOC_O_UPSIDE_DOWN?DOC_O_PORTRAIT:p_doc->doc->orient;
-		if (!fprintf(out,"%%%%Orientation: %s%s",doc_p_orientation_str[p_doc->doc->orient],lend_str[dsc->eoln])<0){ 
+		if (fprintf(out,"%%%%Orientation: %s%s",doc_p_orientation_str[p_doc->doc->orient],lend_str[dsc->eoln])<0){ 
 			vdoc_errno = VDOC_ERR_LIBC;
 			return -1;
 		}
@@ -428,7 +428,7 @@ static long putHeader(page_list_head * p_doc, FILE * in, FILE * out){
 		|| p_doc->doc->bbox.left.y
 	   )
 	{
-	   	if (!fprintf(out,"%%%%BoundingBox: %d %d %d %d%s",
+	   	if (fprintf(out,"%%%%BoundingBox: %d %d %d %d%s",
 			     p_doc->doc->bbox.left.x,p_doc->doc->bbox.left.y,
 			     p_doc->doc->bbox.right.x,p_doc->doc->bbox.right.y,
 			     lend_str[dsc->eoln])<0
