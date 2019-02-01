@@ -222,17 +222,17 @@ static param  cmd_modulo_params[] = {{"pages",CMD_TOK_INT,CMD_TOK_UNKNOWN,0,0,NU
 static param  cmd_duplex_params[] = {{"long-edge",CMD_TOK_INT,CMD_TOK_INT,1,0,NULL}};
 static param  cmd_scale_params[] = {{"scale",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL}};
 static param  cmd_scaleto_params[] = {{"paper",CMD_TOK_ID,CMD_TOK_UNKNOWN,0,0,NULL},
-				 {"top",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,36,NULL},
-				 {"right",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,36,NULL},
-				 {"bottom",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,36,NULL},
-				 {"left",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,36,NULL},
+				 {"top",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,1,NULL},
+				 {"right",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,1,NULL},
+				 {"bottom",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,1,NULL},
+				 {"left",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,1,NULL},
 				};
 static param  cmd_scaleto2_params[] = {{"x",CMD_TOK_MEASURE,CMD_TOK_UNKNOWN,-1,0,NULL},
 				{"y",CMD_TOK_MEASURE,CMD_TOK_UNKNOWN,-1,0,NULL},
-				 {"top",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,36,NULL},
-				 {"right",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,36,NULL},
-				 {"bottom",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,36,NULL},
-				 {"left",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,36,NULL},
+				 {"top",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,0,NULL},
+				 {"right",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,0,NULL},
+				 {"bottom",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,0,NULL},
+				 {"left",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,0,NULL},
 				};
 
 static param  cmd_flip_params[] = {{"mode",CMD_TOK_ID,CMD_TOK_UNKNOWN,0,0,NULL}};
