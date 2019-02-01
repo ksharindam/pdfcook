@@ -2,7 +2,7 @@
 Preprinting preparation tool for PDF ebooks.  
 
 ### Build and Install
-Enter directory src 
+Enter directory src  
 `cd src`  
 run  
 ```

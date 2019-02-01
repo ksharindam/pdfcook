@@ -165,14 +165,10 @@ int pages_number(page_list_head * p_doc,int x, int y, int start,char * text, cha
 			return -1;
 		}
 	}
-	if (x==-1 && y==-1){
-		poz.x=(p_doc->doc->bbox.right.x-p_doc->doc->bbox.left.x)/2 + p_doc->doc->bbox.left.x;
-		poz.y=size+10;
-	}
-	else{
-		poz.x=x;
-		poz.y=y;
-	}
+
+    poz.x= (x!=-1)? x:(p_doc->doc->bbox.right.x-p_doc->doc->bbox.left.x)/2 + p_doc->doc->bbox.left.x;
+    poz.y= (y!=-1)? y:size+10;
+
 	for(page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
 		asprintf(&out,text,start++);
         if (start>1)
