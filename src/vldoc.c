@@ -565,7 +565,6 @@ int update_global_dimensions(page_list_head * p_doc){
 }
 
 int doc_page_transform(page_list * pg_handle, transform_matrix * matrix){      /*transformace stranky pomoci transformacni matice*/
-    debug("doc_page_transform(%d)\n", pg_handle->page->paper.left.x);
 	pg_handle->page=page_handle_copy_w(pg_handle->page);
 	/*printf("%d %d %d %d\n",pg_handle->page->bbox.left.x,pg_handle->page->bbox.left.y,pg_handle->page->bbox.right.x,pg_handle->page->bbox.right.y);*/
 	transform_dimensions(&pg_handle->page->bbox,matrix);

@@ -251,7 +251,7 @@ static param cmd_paper_params2[] = {{"x",CMD_TOK_MEASURE,CMD_TOK_UNKNOWN,0,0,NUL
 				   {"y",CMD_TOK_MEASURE,CMD_TOK_UNKNOWN,0,0,NULL}};
 static param cmd_paper_params[]= {{"paper",CMD_TOK_ID,CMD_TOK_UNKNOWN,0,0,NULL}};
 static param cmd_orient_params[] = {{"orient",CMD_TOK_ID,CMD_TOK_UNKNOWN,0,0,NULL}};
-static param cmd_nup_params[] = {{"x",CMD_TOK_INT,CMD_TOK_UNKNOWN,0,0,NULL},
+static param cmd_nup_params[] = {{"x",CMD_TOK_INT,CMD_TOK_INT,2,0,NULL},
 				 {"y",CMD_TOK_INT,CMD_TOK_INT,0,0,NULL},
 				 {"dx",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,0,NULL},
 				 {"dy",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,0,NULL},
@@ -273,9 +273,9 @@ static param cmd_line_params[]   = {{"lx",CMD_TOK_MEASURE,CMD_TOK_UNKNOWN,0,0,NU
 				    {"hy",CMD_TOK_MEASURE,CMD_TOK_UNKNOWN,0,0,NULL},
 				    {"width",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,2,NULL}
 				   };
-static param cmd_rotate_params[] = {{"angle",CMD_TOK_INT,CMD_TOK_UNKNOWN,0,0,NULL}};
-static param cmd_move_params[]   = {{"x",CMD_TOK_MEASURE,CMD_TOK_UNKNOWN,0,0,NULL},
-				    {"y",CMD_TOK_MEASURE,CMD_TOK_UNKNOWN,0,0,NULL}};
+static param cmd_rotate_params[] = {{"angle",CMD_TOK_INT,CMD_TOK_INT,270,0,NULL}};
+static param cmd_move_params[]   = {{"x",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,0,NULL},
+				    {"y",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,0,NULL}};
 
 static param cmd_cmarks_params[]   = {{"by_bbox",CMD_TOK_INT,CMD_TOK_INT,1,0,NULL}};
 
@@ -283,19 +283,19 @@ static param cmd_norm_params[]   = {{"center",CMD_TOK_ID,CMD_TOK_ID,0,0,NULL},
 				    {"scale",CMD_TOK_INT,CMD_TOK_INT,1,0,NULL},
 				    {"l_bbox",CMD_TOK_INT,CMD_TOK_INT,1,0,NULL},
 				    {"g_bbox",CMD_TOK_INT,CMD_TOK_INT,1,0,NULL}};
-static param cmd_matrix_params[]   = {{"a",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL},
-				      {"b",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL},
-				      {"c",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL},
-				      {"d",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL},
-				      {"e",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL},
-				      {"f",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL}};
+static param cmd_matrix_params[]   = {{"a",CMD_TOK_REAL,CMD_TOK_REAL,0,1,NULL},
+				      {"b",CMD_TOK_REAL,CMD_TOK_REAL,0,0,NULL},
+				      {"c",CMD_TOK_REAL,CMD_TOK_REAL,0,0,NULL},
+				      {"d",CMD_TOK_REAL,CMD_TOK_REAL,0,1,NULL},
+				      {"e",CMD_TOK_REAL,CMD_TOK_REAL,0,0,NULL},
+				      {"f",CMD_TOK_REAL,CMD_TOK_REAL,0,0,NULL}};
 
 static param  cmd_spaper_params[] = {{"name",CMD_TOK_ID,CMD_TOK_UNKNOWN,0,0,NULL},
 				     {"x",CMD_TOK_MEASURE, CMD_TOK_UNKNOWN,0,0,NULL},
 				     {"y",CMD_TOK_MEASURE, CMD_TOK_UNKNOWN,0,0,NULL}};
 
 #define fill_params(p) p,sizeof(p)/sizeof(param)
-/**definice prikazu*/
+/** { name, help, function, parameters, parameters count, use page ranges } */
 static cmd_entry cmd_commands[]={
 	{"apply","Apply command(s) to these pages",cmd_apply,NULL,0,1},
 	{"bbox","Recalculate bbox on each page by GS",cmd_bbox,NULL,0,0},
@@ -1057,20 +1057,6 @@ static int cmd_make_tree(MYFILE * f, cmd_ent_struct_head * cmd_tree, cmd_tok_str
 				asprintf(&arg_ent[j].part,"%s", last_cmd);
 				//arg_ent[j].pparam = NULL;
 			}
-#if 0			
-			printf("user defined command \"%s\"\n", def_name);
-			printf("body %s\n", def_body);
-			printf("params count: %d\n", params_count);
-			for (i=0;i<arg_count;++i) {
-				if (arg_ent[i].part)
-					printf(">>%s\n",arg_ent[i].part); 
-				if (arg_ent[i].pparam) {
-					printf(" <$$> ");
-				}
-			}
-			
-			printf("def isn't implemented yet ...\n");
-#endif
 			cmd_add_def(def_name, params, params_count, arg_ent, arg_count);
 			continue;
 		} else if (tmp) {
@@ -1431,35 +1417,6 @@ int cmd_exec(page_list_head * p_doc, cmd_ent_struct_head * cmd_tree ,MYFILE * f)
 	structure->row=*row;\
 	structure->column=*column;\
 	}
-
-//TODO: for debugung purpose, remove it!!
-#if 0
-int _mygetc(MYFILE * f, int i, int j)
-{
-	int c;
-	c = mygetc(f);
-	printf("%d %d  \"%c\"*\n",i, j, c);
-	return c;
-}
-
-#undef mygetc
-
-#define mygetc(a) \
-		 _mygetc(a, __LINE__, column)
-
-void  _myungetc(MYFILE * f, int i, int j)
-{
-	printf("%d %d -*\n",i, j);
-	myungetc(f);
-
-}
-
-#undef myungetc
-
-#define myungetc(a) \
-		 _myungetc(a, __LINE__, column)
-#endif
-
 
 /**tokenizer for cmdexec parser*/
 static int cmd_get_token(MYFILE * f,cmd_tok_struct * structure){

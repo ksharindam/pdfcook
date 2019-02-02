@@ -1,7 +1,7 @@
 SOURCES = cmdexec.c fileio.c page_list.c pdf_lib.c ps_lib.c vldoc.c common.c main.c\
     pdf_doc.c pdf_parser.c vdoc.c dummydoc.c main_page.c pdf_filters.c ps_doc.c vdocerror.c
 OBJS = $(SOURCES:.c=.o)
-CC = gcc
+CC = gcc -DDEBUG
 CFLAGS = -Wall -O2 -fno-strict-aliasing
 INCLUDES =
 LIBS = -lm -lz

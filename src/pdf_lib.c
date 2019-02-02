@@ -686,7 +686,6 @@ static int pdf_get_boundaries(dimensions * dim, pdf_object * obj){
 }
 
 static int pdf_set_boundaries(dimensions * dim, pdf_object * obj){
-    debug("pdf_set_boundaries(%d)\n", dim->left.x);
 	char * str;
 	if (dim==NULL || obj==NULL){
 		return -1;
