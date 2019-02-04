@@ -1219,7 +1219,6 @@ void pdf_structure_delete(pdf_doc_handle * p_pdf){
 	return;
 }
 static int pdf_page_to_xobj(page_handle * pg_handle){
-    debug("pdf_page_to_xobj\n");
 	int major;
 	pdf_object * new_page, * new_page_contents, * new_page_xobject, * contents, * pg, * pom, * xobj_val;
 	pdf_page_handle * page = (pdf_page_handle *)pg_handle->page;
@@ -1412,7 +1411,6 @@ int pdf_merge_stream(pdf_doc_handle * p_pdf,pdf_object * stream1, pdf_object * s
 }
 
 int pdf_page_transform(page_handle * pg_handle, transform_matrix * matrix){
-    debug("pdf_page_transform(%d)\n", pg_handle->paper.left.x);
 	int major;
 	pdf_object * new_page, * page1, * pom, * stream1;
 	char * ct;

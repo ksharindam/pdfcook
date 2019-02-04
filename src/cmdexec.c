@@ -1989,7 +1989,7 @@ static int cmd_duplex(page_list_head * p_doc, param params[], cmd_page_list_head
 /*TODO: add api to vdoc for working with duplex*/
 	if (params[0].int_number){
 		f = stropen(cmds);
-		assert(cmd_preexec(&cmd_ent, f));
+		assert(cmd_preexec(&cmd_ent, f)==0);
 		assert(cmd_exec(p_doc, &cmd_ent, f)==0);
 		myfclose(f);
 	}

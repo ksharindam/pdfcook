@@ -14,6 +14,7 @@ This is a forked project of pspdftool by Ales Snuparek. Many many thanks to him 
 The project has many bugs that I am trying to fix.  
 
 ### Changes over original project
-* doesn't write negative page numbers
-* move page (translate) now works
-* can use even and odd page set in apply command
+* doesn't write negative page numbers  
+* move page (translate) now works  
+* can use even and odd page set in apply command  
+* duplex mode is now working  
