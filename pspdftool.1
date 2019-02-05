@@ -69,7 +69,7 @@ even set of pages
 .sp
 .| command
 
-list of supported commands
+List of supported commands
 
 Commands for working with documents:
 
@@ -93,16 +93,23 @@ Commands for working with pages selections:
 .B select
 .I {page_ranges}
 
-select pages to save
+Select pages to save
 
 .TP
 .B modulo
 .I (pages, half, round){page_ranges}
 
-special type of select pages
+Special type of select pages
 
 .TP
 .B book
+
+Arrange pages for printing booklets. e.g. For 8 pages it arranges in 8,1,2,7,6,3,4,5 order
+
+.TP
+.B book2
+
+Arrange pages in 4,1,2,3,8,5,6,7... order for center fold duplex format
 
 .TP
 .B apply
@@ -112,12 +119,12 @@ special type of select pages
 .B new
 .I {page_ranges}
 
-add new page at the end of list
+Add new page at the end of list
 
 .TP
 .B del
 
-delete pages (use inside apply command)
+Delete pages (use inside apply command)
 
 .RE
 Command for pages' content transform:
@@ -126,79 +133,79 @@ Command for pages' content transform:
 .B matrix
 .I (a,b,c,d,e,f)
 
-transform by 3x3 matrix whose last 3 components are [0,0,1]
+Transform by 3x3 matrix whose last 3 components are [0,0,1]
 
 .TP
 .B rotate
 .I (angle)
 
-rotate page clockwise
+Rotate page clockwise
 
 .TP
 .B move
 .I (x, y)
 
-move page to right by x and to top by y
+Move page to right by x and to top by y
 
 .TP
 .B scaleto
 .I (paper, top, right, bottom, left)
 
-fit page to paper size. eg - scaleto(a4)
+Fit page to paper size. eg - scaleto(a4)
 
 .TP
 .B scaleto2
 .I (w, h, top, right, bottom, left)
 
-scale to particular width and height and margins
+Scale to particular width and height and margins
 
 .TP
 .B scale
 .I (scale)
 
-scale pages by specified scale factor
+Scale pages by specified scale factor
 
 .TP
 .B flip
 .I (mode)
 
-mode is horizontal | vertical. e.g - flip(vertical)
+Flip in horizontal or vertical mode is . e.g - flip(vertical)
 
 .TP
 .B number
 .I (x, y, start, text, font, size)
 
-add numbers to pages. e.g - number(start=3)
+Write page numbers over pages. e.g - number(start=3)
 
 .TP
 .B crop
 .I (paper)
 
-crop pages to specified paper size
+Crop pages to specified paper size
 
 .TP
 .B crop2
 .I (lx, ly, hx, hy)
 
-crop pages to the exact size
+Crop pages to the exact size
 
 .TP
 .B paper
 .I (paper)
 
-sets paper size
+Sets paper size
 
 .TP
 .B paper2
 .I (x,y)
 
-sets papes size to exact size
+Sets papes size to exact size
 
 .TP
 .B orient 
 .I (orient)
 
-set text orientation the page landscape|portrait
+Set text orientation the page landscape|portrait
 
 .TP
 .B nup
@@ -211,19 +218,19 @@ Paper is name of final paper size (e.g. a4,letter ...). Rotate will rotate each 
 .TP
 .B merge
 
-merge list to one page
+Merge contents of all pages to one page
 
 .TP
 .B text
 .I (x, y, text, font, size)
 
-write text to page
+Write text to page
 
 .TP
 .B line 
 .I (lx,ly,hx,hy,width)
 
-draw line to page
+Draw line to page
 
 .RE
 Misc commands:
@@ -231,26 +238,25 @@ Misc commands:
 .TP 12
 .B bbox
 
-
-recalculate bbox on each page by GhostScript
+Recalculate bbox on each page by GhostScript
 
 .TP
 .B cmarks(by_bbox=1)
 
-add printing marks, if by_bbox is 0 then printing marks are added by paper size, 
+Add printing marks, if by_bbox is 0 then printing marks are added by paper size, 
 else they are added by bounding box
 
 .TP
 .B duplex
 .I (long-edge)
 
-aranges pages for duplex printing
+Aranges pages for duplex printing
 
 .TP
 .B norm
 .I (center,scale,l_bbox,g_bbox)
 
-normalize  pages in list on the same size
+Normalize  pages in list on the same size
 
 .RE
 .sp
@@ -260,10 +266,10 @@ normalize  pages in list on the same size
 .SH OPTIONS
 .TP
 .B "\-h  \-\-help"
-display help message and exit
+Display help message and exit
 .TP
 .B "\-f \-\-file"
-read commands from file
+Read commands from file
 
 .SH EXAMPLE
 This section contains some sample re-arrangements. To put two pages on one
@@ -282,32 +288,32 @@ To re-arrange pages for printing 2-up booklets, use
 .ce
 .B book nup(2, paper=a4)
 .sp
-select first five pages and last one from document
+Select first five pages and last one from document
 .sp
 .ce
 .B select{1..5 -1}
 .sp
-reverse page in list
+Reverse page in list
 .sp
 .ce
 .B select{$..1}
 .sp
-delete last page from document
+Delete last page from document
 .sp
 .ce
 .B apply{-1 del}
 .sp
-reverse pages in document
+Reverse pages in document
 .sp
 .ce
 .B modulo(2){-1}
 .sp
-select even pages form document
+Select even pages form document
 .sp
 .ce
 .B modulo(2){2}
 .sp
-fit page to a4
+Fit page to a4
 .sp
 .ce
 .B scaleto(a4)

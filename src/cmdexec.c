@@ -185,6 +185,7 @@ static int cmd_read(page_list_head * p_doc, param params[], cmd_page_list_head *
 static int cmd_write(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
 static int cmd_modulo(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
 static int cmd_book(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
+static int cmd_book2(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
 static int cmd_select(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
 static int cmd_apply(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
 static int cmd_new(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
@@ -219,7 +220,7 @@ static param  cmd_modulo_params[] = {{"pages",CMD_TOK_INT,CMD_TOK_UNKNOWN,0,0,NU
 				     {"half",CMD_TOK_INT,CMD_TOK_INT,-1,0,NULL},
 				     {"round",CMD_TOK_INT,CMD_TOK_INT,-1,0,NULL}
 				};
-static param  cmd_duplex_params[] = {{"long-edge",CMD_TOK_INT,CMD_TOK_INT,1,0,NULL}};
+
 static param  cmd_scale_params[] = {{"scale",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL}};
 static param  cmd_scaleto_params[] = {{"paper",CMD_TOK_ID,CMD_TOK_UNKNOWN,0,0,NULL},
 				 {"top",CMD_TOK_MEASURE,CMD_TOK_MEASURE,0,1,NULL},
@@ -300,11 +301,12 @@ static cmd_entry cmd_commands[]={
 	{"apply","Apply command(s) to these pages",cmd_apply,NULL,0,1},
 	{"bbox","Recalculate bbox on each page by GS",cmd_bbox,NULL,0,0},
 	{"book", "",cmd_book,NULL,0,0},
+	{"book2", "",cmd_book2,NULL,0,0},
 	{"cmarks","Add printing marks",cmd_cmarks,fill_params(cmd_cmarks_params),0},
 	{"crop","",cmd_crop,fill_params(cmd_crop_params),0},
 	{"crop2","",cmd_crop2,fill_params(cmd_crop2_params),0},
 	{"del","Delete list",cmd_del,NULL,0,0},
-	{"duplex","",cmd_duplex,fill_params(cmd_duplex_params),0},
+	{"duplex","prepare pages for double sided printing",cmd_duplex,NULL,0},
 	{"flip","horizontal | vertical",cmd_flip,fill_params(cmd_flip_params),0},
 	{"line","draw line to page",cmd_line,fill_params(cmd_line_params),0},
 	{"matrix","transform by matrix",cmd_matrix,fill_params(cmd_matrix_params),0},
@@ -338,168 +340,6 @@ static struct unit_val_ent table[] = {
 	{"pt",1},
 	{NULL,0}
 };
-
-static struct def_list_head dlist = {(def_list *)&dlist,(def_list *)&dlist};
-
-static void cmd_add_def(char * name,  param * params, int params_count, struct cmd_arg_ent * arg_ent, int arg_ent_count) {
-	def_list * tmp = (def_list*) malloc(sizeof(def_list));
-	if (tmp == NULL) {
-		vdoc_errno=VDOC_ERR_LIBC;	
-		message(FATAL,"malloc() error");
-		assert(0);
-		return;
-	}
-	assert(tmp!=NULL);
-	tmp->name = name;
-	tmp->params = params;
-	tmp->params_count = params_count;
-	tmp->arg_ent = arg_ent;
-	tmp->arg_ent_count = arg_ent_count;
-	listinsert(tmp, dlist.next);
-	
-}
-
-
-static def_list * cmd_get_def(char *name) {
-	def_list * tmp = dlist.next;
-	for (tmp = dlist.next; tmp!=((def_list *)&dlist); tmp=tmp->next) {
-		if (strcmp(name, tmp->name) == 0) {
-			return tmp;
-		}
-	} 
-	return NULL;
-} 
-
-static cmd_param* cmd_expand_param(cmd_ent_struct * cmd, int param_pos, char * name) {
-	cmd_param * argument;
-	int i;
-	for(argument =cmd->params.next, i=1;i< param_pos && argument!=(cmd_param *)(&cmd->params);
-	    argument=argument->next, ++i) {
-		if (argument->name && name && (strcmp(argument->name, name) == 0)) {
-			return argument;
-		}
-	}
-	if (argument!=(cmd_param *)(&cmd->params)) {
-		return argument;
-	} else {
-		return NULL;
-	}
-}
-
-static void cmd_print_arg(cmd_param * argument, char * buffer, size_t buffer_len) {
-	
-	switch (argument->type) {
-		case CMD_TOK_INT:
-			snprintf(buffer, buffer_len, "%ld", argument->number);
-			break;
-		case CMD_TOK_REAL:
-			snprintf(buffer, buffer_len, "%f", argument->real_number);
-			break;
-		case CMD_TOK_ID:
-			snprintf(buffer, buffer_len, "%s", argument->str);
-			break;
-		case CMD_TOK_STR:
-			snprintf(buffer, buffer_len, "\"%s\"", argument->str);
-			break;
-		case CMD_TOK_MEASURE:
-			snprintf(buffer, buffer_len, "%f", argument->real_number);
-			break;
-		default:
-			assert(0);
-			break;
-
-	}
-		
-}
-
-static void cmd_print_arg_exp (param * argument, char * buffer, size_t buffer_len) {
-	
-	switch (argument->type) {
-		case CMD_TOK_INT:
-			snprintf(buffer, buffer_len, "%ld", argument->int_number);
-			break;
-		case CMD_TOK_REAL:
-			snprintf(buffer, buffer_len, "%f", argument->real_number);
-			break;
-		case CMD_TOK_ID:
-			snprintf(buffer, buffer_len, "%s", argument->str);
-			break;
-		case CMD_TOK_STR:
-			snprintf(buffer, buffer_len, "\"%s\"", argument->str);
-			break;
-		case CMD_TOK_MEASURE:
-			snprintf(buffer, buffer_len, "%f", argument->real_number);
-			break;
-		default:
-			assert(0);
-			break;
-
-	}
-		
-}
-
-
-
-#define BUF_LEN 256
-static int cmd_expand_macro( cmd_ent_struct_head * cmd_tree, def_list * def, cmd_ent_struct * cmd ) {
-	int arg_count = def->arg_ent_count;
-	struct cmd_arg_ent * arg_ent =  def->arg_ent;
-	cmd_param * argument;
-	int param_pos;
-	char buf[BUF_LEN];
-	char * c_buf = NULL;
-	char * tmp_buf;
-	MYFILE * f;
-	cmd_tok_struct tok;
-	int retv;
-
-	int i;
-
-//del me
-	printf("expanding makro ...\n");
-	for (i=0;i<arg_count;++i) {
-		if (arg_ent[i].pparam) {
-			param_pos = arg_ent[i].pparam - def->params + 1;
-			argument = cmd_expand_param(cmd, param_pos, arg_ent[i].pparam->name);
-			if (argument == NULL) {
-				if (arg_ent[i].pparam->type == CMD_TOK_UNKNOWN) {
-					message(WARN,">Command \"def\" has few params at line %d column %d.\n",cmd->row,cmd->column);
-					return -1;
-				}
-				cmd_print_arg_exp(arg_ent[i].pparam,buf, BUF_LEN);
-			} else {
-				cmd_print_arg(argument,buf, BUF_LEN);
-			}
-			if (c_buf) {
-				tmp_buf = c_buf;
-				asprintf(&c_buf, "%s%s",tmp_buf, buf);
-				free(tmp_buf);
-			} else {
-				asprintf(&c_buf, "%s", buf);
-				
-			}
-		}
-
-		if (arg_ent[i].part) {
-			if (c_buf) {
-				tmp_buf = c_buf;
-				asprintf(&c_buf, "%s%s",tmp_buf, arg_ent[i].part);
-				free(tmp_buf);
-			} else {
-				asprintf(&c_buf, "%s", arg_ent[i].part);
-				
-			}
-		}
-	}	
-//del me
-	printf("%s\n", c_buf);
-	f = stropen(c_buf);
-	cmd_get_token(f, &tok);
-	retv = cmd_make_tree(f, cmd_tree, &tok);
-	myfclose(f);
-	free(c_buf);
-	return retv;
-}
 
 static double get_unit_val(char * unit){
 	int i;
@@ -882,185 +722,11 @@ static cmd_ent_struct * cmd_new_command(cmd_ent_struct_head * cmd_tree, char * c
 
 static int cmd_make_tree(MYFILE * f, cmd_ent_struct_head * cmd_tree, cmd_tok_struct * p_tok){
 	cmd_ent_struct * cmd;
-	def_list * tmp;
-	cmd_ent_struct_head tmp_tree;
 	cmd_tree->next=cmd_tree->prev=(cmd_ent_struct *)cmd_tree;
-	tmp_tree.next=tmp_tree.prev=(cmd_ent_struct *)&tmp_tree;
 	while((p_tok->token)==CMD_TOK_ID){
-		tmp = cmd_get_def(p_tok->str);	
-		if (strcmp("def", p_tok->str) && tmp == NULL) {
-			cmd=cmd_new_command(cmd_tree,p_tok->str, p_tok->row, p_tok->column);
-		} else {
-			cmd=cmd_new_command(&tmp_tree,p_tok->str, p_tok->row, p_tok->column);
-		}
+		cmd=cmd_new_command(cmd_tree,p_tok->str, p_tok->row, p_tok->column);
 		if ((cmd_get_token(f,p_tok)==-1) || (cmd_get_args(f,cmd,p_tok)==-1)){
-			if (tmp) {
-				cmd_expand_macro(cmd_tree, tmp, cmd);
-			}
 			break;
-		}
-
-		if (strcmp("def", cmd->cmd_id)==0) {
-			char * def_name = NULL;
-			char * def_body = NULL;
-			char * arg_name;
-			char * last_cmd;
-			param * params = NULL;
-			cmd_param * argument;
-			struct cmd_arg_ent * arg_ent;
-			int i;
-			int j;
-			int k;
-			int params_count = cmd->params_count - 2;
-			int arg_count = 1;
-			int tmp;
-			assert(cmd->params_count>=0);
-			
-			if (cmd->params_count) {
-				params = malloc(sizeof(param) * params_count);
-
-				if (params == NULL) {
-					vdoc_errno=VDOC_ERR_LIBC;	
-					message(FATAL,"malloc() error");
-					assert(0);
-					return -1;
-				}
-			}
-
-			for(i=0,argument=cmd->params.next;
-			    argument!=(cmd_param *)(&cmd->params) &&  argument->name[0]==0;
-			    argument=argument->next,++i) {
-				switch (i) {
-					case 0:
-						if (argument->type==CMD_TOK_STR || argument->type==CMD_TOK_ID) {
-							asprintf(&def_name, "%s", argument->str);
-						} else {
-							message(WARN,"Param \"name\" in command \"def\" must be ID or str  at line %d column %d.\n",cmd->row,cmd->column);
-							return -1;
-						}
-						break;
-					case 1:
-						if (argument->type==CMD_TOK_STR || argument->type==CMD_TOK_ID) {
-							def_body = argument->str;
-						} else {
-							message(WARN,"Param \"body\" in command \"def\" must be ID or str  at line %d column %d.\n",cmd->row,cmd->column);
-							return -1;
-						}
-						break;
-					case 2:
-					default:
-						params[i-2].type =  CMD_TOK_UNKNOWN;
-						switch (argument->type) {
-							case CMD_TOK_STR:
-							case CMD_TOK_ID:
-								asprintf(&(params[i-2].name), "%s", argument->str);
-								break;
-							default:
-								message(WARN,"Command \"def\" has wrong param type at line %d column %d.\n",cmd->row,cmd->column);
-								return -1;
-
-						}
-						break;
-				}
-			}
-
-			for(;argument!=(cmd_param *)(&cmd->params) &&  argument->name[0]!=0;
-			    argument=argument->next, ++i)
-			{
-				params[i-2].type =  argument->type;
-				asprintf(&(params[i-2].name), "%s", argument->name);
-				switch (argument->type) {
-					case CMD_TOK_INT:
-						params[i-2].int_number = argument->number;
-						break;
-					case CMD_TOK_REAL:
-						params[i-2].real_number = argument->real_number;
-						break;
-					case CMD_TOK_STR:
-					case CMD_TOK_ID:
-						asprintf(&(params[i-2].str), "%s", argument->str);
-						break;
-					default:
-						assert(0);
-						return -1;
-
-				}
-
-			}
-			if (argument!=(cmd_param *)(&cmd->params)) {
-				message(WARN,"Command has unnamed args after named args at line %d column %d\n",cmd->row, cmd->column);
-				return -1;
-			}
-
-			if (i<2) {
-				message(WARN,"Command \"def\" has feuew params at line %d column %d.\n",cmd->row,cmd->column);
-				return -1;
-			}
-			for (i=0;def_body[i] != 0;++i) {
-				if (def_body[i]=='$') {
-					++arg_count;
-				}
-				if (def_body[i] == '\\' && def_body[i+1] != 0){
-					++i;
-				}
-			}
-			arg_ent = (struct cmd_arg_ent *)  malloc(sizeof(struct cmd_arg_ent) * arg_count);
-
-			if (arg_ent == NULL) {
-				vdoc_errno=VDOC_ERR_LIBC;	
-				message(FATAL,"malloc() error");
-				assert(0);
-				return -1;
-			}
-			last_cmd = def_body;
-			j = 0;
-			arg_ent[j].part = NULL;
-			arg_ent[j].pparam = NULL;
-			for (i=0;def_body[i] != 0;++i) {
-				if (def_body[i]=='$') {
-					tmp = def_body[i];
-					def_body[i] = 0;
-					asprintf(&arg_ent[j].part,"%s", last_cmd);
-					def_body[i] = tmp;
-					++j;
-					++i;
-					arg_name = def_body + i;
-					while (isalnum(def_body[i])) {
-						++i;
-					}
-					tmp = def_body[i];
-					def_body[i] = 0;
-					arg_ent[j].pparam = NULL;
-					
-					for (k=0;k<params_count;++k) {
-						if (params[k].name &&  strcmp(arg_name, params[k].name) == 0) {
-							arg_ent[j].pparam = params + k;
-							break;
-						}
-					}					
-
-					if (arg_ent[j].pparam == NULL) {
-						message(WARN,"In command \"def\" param \"%s\"  isn't declared at line %d column %d.\n", arg_name, cmd->row,cmd->column);
-						return -1;
-					}
-
-					def_body[i] = tmp;
-					last_cmd = def_body + i;	
-					--i;
-				}
-				if (def_body[i] == '\\' && def_body[i+1] != 0){
-					++i;
-				}
-			}
-
-			if (strlen(last_cmd)) {
-				asprintf(&arg_ent[j].part,"%s", last_cmd);
-				//arg_ent[j].pparam = NULL;
-			}
-			cmd_add_def(def_name, params, params_count, arg_ent, arg_count);
-			continue;
-		} else if (tmp) {
-			cmd_expand_macro(cmd_tree, tmp, cmd);
 		}
 
 		if (strcmp("new",cmd->cmd_id)==0){
@@ -1074,7 +740,7 @@ static int cmd_make_tree(MYFILE * f, cmd_ent_struct_head * cmd_tree, cmd_tok_str
 			}
 		}
 	}
-	cmd_free_tree(&tmp_tree);
+
 	if (p_tok->token==CMD_TOK_EOF){
 		return 0;
 	}
@@ -1628,6 +1294,37 @@ static int cmd_book(page_list_head * p_doc, param params[], cmd_page_list_head *
 	pages_list_cat(p_doc, new);
 	return 0;
 }
+/* arrange pages in 4,1,2,3,8,5,6,7... order for center fold duplex format*/
+static int cmd_book2(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
+	int i;
+	page_list * p1,*p2,*p3,*p4;
+	page_list_head * new;
+	new=pages_list_new(p_doc,0);
+	while (pages_count(p_doc)%4){
+		page_list * pg_handle;
+		pg_handle=page_new_ext(NULL,p_doc->doc->type,p_doc->doc);
+		if (pg_handle==NULL){
+			return -1;
+		}
+		pages_list_add_page(p_doc,pg_handle,pg_add_end);
+	}
+	p1=page_begin(p_doc);
+	for (i=0;i<pages_count(p_doc)/4;++i){
+		p2=page_next(p1);
+		p3=page_next(p2);
+		p4=page_next(p3);
+		p1=page_next(p4);
+
+		pages_list_add_page(new, page_new(p1,0),pg_add_end);
+		pages_list_add_page(new, page_new(p2,0),pg_add_end);
+		pages_list_add_page(new, page_new(p3,0),pg_add_end);
+		pages_list_add_page(new, page_new(p4,0),pg_add_end);
+
+	}
+	pages_list_empty(p_doc);
+	pages_list_cat(p_doc, new);
+	return 0;
+}
 
 static int cmd_modulo(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
 	page_list_head * range, * new;
@@ -1987,14 +1684,11 @@ static int cmd_duplex(page_list_head * p_doc, param params[], cmd_page_list_head
 	MYFILE * f;
 	cmd_ent_struct_head cmd_ent;
 /*TODO: add api to vdoc for working with duplex*/
-	if (params[0].int_number){
-		f = stropen(cmds);
-		assert(cmd_preexec(&cmd_ent, f)==0);
-		assert(cmd_exec(p_doc, &cmd_ent, f)==0);
-		myfclose(f);
-	}
+	f = stropen(cmds);
+	assert(cmd_preexec(&cmd_ent, f)==0);
+	assert(cmd_exec(p_doc, &cmd_ent, f)==0);
+	myfclose(f);
 	return 0;
-
 }
 
 static int cmd_matrix(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
