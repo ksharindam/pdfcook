@@ -264,9 +264,6 @@ int bwrite (FILE * src,FILE * dst,long poz,size_t len)
 		return 0;
 	}
 	if (len<0){
-#ifdef _DEBUG
-		fprintf(stderr,"!!!!blok se zapornou delkou \n");
-#endif
 		return -1;
 	}
 

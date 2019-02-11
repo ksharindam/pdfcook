@@ -974,12 +974,6 @@ static int cmd_exec_tree(page_list_head * p_doc,cmd_ent_struct_head * cmd_tree, 
 static void cmd_free_range(cmd_page_list_head *range){
 	cmd_page_list * pom = range->next, * pom2;
 	while (pom!=(cmd_page_list*) range){
-#ifdef _CMD_DEBUG_
-		if (pom->negativ_range){
-			printf(" - ");
-		}
-		printf("%ld..%ld\n",pom->range[0], pom->range[1]);
-#endif
 		if (pom->commands.next->prev==(cmd_ent_struct *)&(pom->commands)){
 			cmd_free_tree(&(pom->commands));
 		}
@@ -991,27 +985,6 @@ static void cmd_free_range(cmd_page_list_head *range){
 static void cmd_free_args(cmd_param_head * params){
 	cmd_param * pom = params->next, * pom2;
 	while (pom!=(cmd_param *) params){
-#ifdef _CMD_DEBUG_
-		printf("%s:",pom->name);
-		switch(pom->type){
-			case CMD_TOK_INT:
-				printf("i%ld\n",pom->number);
-				break;
-
-			case CMD_TOK_MEASURE:
-			case CMD_TOK_REAL:
-				printf("f%f\n",pom->real_number);
-				break;
-			
-			case CMD_TOK_ID:
-			case CMD_TOK_STR:
-				printf("%s\n",pom->str);
-				break;
-			default:
-				printf("Unknown param\n");
-						
-		}
-#endif
 		pom2=pom;
 		pom=pom->next;
 		free(pom2);
@@ -1021,9 +994,6 @@ static void cmd_free_args(cmd_param_head * params){
 static void cmd_free_tree(cmd_ent_struct_head * cmd_tree){
 	cmd_ent_struct  * pom=cmd_tree->next, * pom2;
 	while (pom!=(cmd_ent_struct*)cmd_tree){
-#ifdef _CMD_DEBUG_
-		printf("%s\n",pom->cmd_id);
-#endif
 		cmd_free_args(&(pom->params));
 		cmd_free_range(&(pom->range));
 		pom2=pom;

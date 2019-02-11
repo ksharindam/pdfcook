@@ -4,9 +4,6 @@
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "0.4"
 
-/* Do we want configuration files? */
-#define ENABLE_RC 1
-
 /* Do we have ghostscript? */
 #define HAVE_GS 1
 

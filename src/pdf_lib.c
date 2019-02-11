@@ -196,11 +196,6 @@ void update_object(pdf_object * obj, pdf_object_table * table){
 }
 
 void dfs_object(pdf_object * obj, pdf_object_table * table){
-	/*DEBUG*/
-	/*pdf_write_object(obj,stdout);
-	printf("\n");
-	fflush(stdout);*/
-	/*DEBUG*/
 	switch (obj->type){
 		 case PDF_OBJ_BOOL:
 		 case PDF_OBJ_INT:
@@ -488,11 +483,6 @@ int pdf_read_objects(pdf_object_table * xref, MYFILE*f){
 			case 'f':
 				continue;
 			case 'n':
-				/*DEBUG*/
-				/*printf("%d\n",i);
-				fflush(stdout);*/
-				/*END_DEBUG*/
-
 				/*another fix for some bad xref table*/
 				if (xref->table[i].offset==0){
 					xref->table[i].used='f';
@@ -1584,16 +1574,7 @@ int stream_to_xobj(pdf_doc_handle * p_pdf, pdf_object * contents, pdf_object * p
 	assert(isStream(contents));
 	xobj = pdf_new_object();
 	
-	/*DEBUG*/
-/*	pdf_write_object(contents->val.stream.dict,stdout);
-	fflush(stdout);*/
-	/*DEBUG*/
 	pdf_copy_object(xobj,contents);
-
-	/*DEBUG*/
-/*	pdf_write_object(xobj->val.stream.dict,stdout);
-	fflush(stdout);*/
-	/*DEBUG*/
 
 	pom=pdf_add_dict_name_value(xobj->val.stream.dict,"Type");
 	pdf_delete_object(pom);

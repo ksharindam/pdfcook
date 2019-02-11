@@ -19,39 +19,39 @@
  * cmdexec.h (command interpreter) 
  */
 
-/**maximalni delka koncovky souboru*/
+/**the maximum length of the file end*/
 #define DOC_EXT_LEN 4 
 
 extern char *  doc_p_order_str[];
 extern char * doc_p_orientation_str[];
  
 /**
- *\brief struktura obsahujici implementacne zavisle funkce na formatu
+ *\brief a structure containing implementation-dependent functions on a format
  */
 typedef struct doc_function_implementation {
-	int (*doc_open)(page_list_head * p_doc, const char * filename);/**<funkce pro nacteni dokumentu*/
-	int (*doc_save)(page_list_head * p_doc, const char * name, void * extra_args);/**<funkce pro ulozeni dokumentu*/
-	int (*doc_close)(page_list_head * doc);/**<funkce pro odstraneni dokumentu z pameti*/
-	int (*doc_convert)(page_list_head * p_doc, char * ext);/**<funkce pro nastaveni orezu stranky*/
-	void * (*doc_structure_new)(void *structure);/**<funkce zkopiruje strukturu dokumentu*/
-	void (*doc_structure_delete)(void *structure);/**<funkce odstrani z pameti pomocnou strukturu dokumentu*/
-	int (*doc_structure_merge)(void * s1, void * s2);/**<funkce spoji dve struktury dokumentu do jende*/
+	int (*doc_open)(page_list_head * p_doc, const char * filename);
+	int (*doc_save)(page_list_head * p_doc, const char * name, void * extra_args);
+	int (*doc_close)(page_list_head * doc);
+	int (*doc_convert)(page_list_head * p_doc, char * ext);/*the page trimming feature*/
+	void * (*doc_structure_new)(void *structure);/*copies the document structure*/
+	void (*doc_structure_delete)(void *structure);
+	int (*doc_structure_merge)(void * s1, void * s2);/*combines two document structures*/
 	
-	int (*update_bbox)(page_list_head * doc);/**<funkce pro prepocet bboxu*/
-	void * (*page_new)(const void *, void *);	/**<funkce pro vytvoreni kopie stranky*/
-	void (*page_delete)(void *);    /**<funkce pro smazani stranky*/
-	int (*page_merge)(page_handle * p1, page_handle * p2);         /**< funkce pro spojeni seznamu stranek do jednne*/
-	int (*draw_line)(page_handle * handle, const coordinate * begin, const coordinate * end, int width); /**<funkce pro implementaci jednoduchych grafickych vystupu na stranku*/          
-	int (*draw_text)(page_handle * handle, const coordinate * where, const char * text,int size, const char * font); /**<funkce pro implementaci jednoduchych grafickych vystupu na stranku*/          
-	int (*page_transform)(page_handle * handle, transform_matrix * matrix);/**<funkce pro transformaci na strance*/
-	int (*page_crop)(page_handle * handle, dimensions * dimensions);/**<funkce pro nastaveni orezu stranky*/
+	int (*update_bbox)(page_list_head * doc);
+	void * (*page_new)(const void *, void *);/*feature to create a copy of the page*/
+	void (*page_delete)(void *);
+	int (*page_merge)(page_handle * p1, page_handle * p2);/*link a list of pages to one*/
+	int (*draw_line)(page_handle * handle, const coordinate * begin, const coordinate * end, int width);
+	int (*draw_text)(page_handle * handle, const coordinate * where, const char * text,int size, const char * font);
+	int (*page_transform)(page_handle * handle, transform_matrix * matrix);/*transform pages using 3x3 matrix*/
+	int (*page_crop)(page_handle * handle, dimensions * dimensions);
 	char ext_str[DOC_EXT_LEN]; /**<standardni koncovka dokumentu pro danny format*/
 }doc_function_implementation;
 
 /* "LowLevel implementace"*/
 
 /**
- * \brief Funkce pro registraci noveho formatu dokumentu.
+ * \brief function for registering a new document format.
  * \param reg_function ukazatel na funkci, ktera naplni prislusnou datovou strukturu
  * \retval 0 vse v poradku
  * \retval -1 pri registraci nastal problem */
@@ -59,7 +59,7 @@ int doc_register_format(int (*reg_function)(doc_function_implementation *));
 void doc_free_format(void);
 /* operace s celym dokumentem*/
 
-/** \brief Funkce nacte soubor \a name a vytvori z nej seznam stranek.
+/** \brief Use the name file to create a list of pages.
  * \param name jmeno souboru
  * \retval ukazatel na seznam stranek
  * \retval NULL pri nacitani souboru nastal problem
