@@ -33,8 +33,8 @@
 
 static char * trailer_filter[] = { "Size", "Root", "ID", NULL };
 static char * catalog_filter[] = { "Pages", "Type" ,  NULL };
-static char * page_filter[] = { "Type", "Parent", "Resources", "MediaBox", "Contents", NULL }; 
-static char * xobject_filter[] = { "Type", "Subtype", "Resources", "BBox", "Length", "Filter", "FormType",  NULL }; 
+static char * page_filter[] = { "Type", "Parent", "Resources", "MediaBox", "Contents", NULL };
+static char * xobject_filter[] = { "Type", "Subtype", "Resources", "BBox", "Length", "Filter", "FormType",  NULL };
 static char * parent_filter[] = {"Type", "Count", "Kids", NULL};
 
 
@@ -60,7 +60,7 @@ struct stream_filters  _compress_filters[]= {{"FlateDecode",zlib_compress_filter
 						{"JPXDecode",NULL},
 						{"Crypt",NULL}
 					 	};
-	
+
 int object_table_ent_insert(pdf_object_table * table, pdf_object * pobj);
 int page_to_xobj(pdf_page_handle * page, pdf_doc_handle * p_pdf, transform_matrix * matrix);
 static int pdf_page_to_xobj(page_handle * pg_handle);
@@ -134,7 +134,7 @@ pdf_object_table * object_table_delete(pdf_object_table * obj){
 	int n;
 	pdf_object_table_elm * elm;
 	for (n=0;n<obj->count;++n){
-	
+
 		elm=&(obj->table[n]);
 		if (elm->used=='n'){
 			pdf_delete_object(elm->obj);
@@ -231,7 +231,7 @@ void dfs_object(pdf_object * obj, pdf_object_table * table){
 			 }
 			 TABLE_GET_ELM(table,obj->val.reference.major).flag=1;
 			 if (TABLE_GET_ELM(table,obj->val.reference.major).obj==NULL){
-			 
+
 			}
 			 dfs_object(TABLE_GET_ELM(table,obj->val.reference.major).obj,table);
 			 return;
@@ -246,8 +246,8 @@ void dfs_object(pdf_object * obj, pdf_object_table * table){
 void update_page_ref(page_list_head * p_doc){
 	page_list *  pom;
 	for (pom=p_doc->next;pom!=page_end(p_doc);pom=page_next(pom)){
-		get_page_content(pom)->minor=TABLE_GET_ELM(get_obj_table(p_doc),get_page_content(pom)->major).minor;	
-		get_page_content(pom)->major=TABLE_GET_ELM(get_obj_table(p_doc),get_page_content(pom)->major).major;	
+		get_page_content(pom)->minor=TABLE_GET_ELM(get_obj_table(p_doc),get_page_content(pom)->major).minor;
+		get_page_content(pom)->major=TABLE_GET_ELM(get_obj_table(p_doc),get_page_content(pom)->major).major;
 	}
 	return;
 }
@@ -274,7 +274,7 @@ int object_table_delete_unused(page_list_head * p_doc){
 		table->table[i].flag=0;
 	}
 	fflush(stdout);
-	dfs_object(obj,table);	
+	dfs_object(obj,table);
 	for (i=1,major=1;i<table->count;++i){
 		if (table->table[i].flag){
 			table->table[i].major=major;
@@ -320,17 +320,19 @@ int pdf_xreftable_get(MYFILE * f,pdf_object_table * table,long xref_poz, char * 
 		return -1;
 	}
 	while (myfgets(line,LLEN,f,NULL)!=EOF && len>=0){
-		len=strlen(line);
-		--len; 
-		while (isspace((int)(line[len]))){
-			line[len]=0;
+        char *entry=line;
+        while (isspace(*entry)) // fixes for leading spaces in xref table
+            entry++;
+        len=strlen(entry)-1;
+        while (len >= 0 && isspace((unsigned char)(entry[len]))){
+            entry[len]=0;
 			--len;
 		}
-		if(strlen(line)==XREF_ENT_LEN){/*zaznam tabulky ...*/
+		if(strlen(entry)==XREF_ENT_LEN){/*zaznam tabulky ...*/
 			long object_offset_tmp;
 			int object_gen_id_tmp;
 			char object_used_tmp;
-			if (sscanf(line,"%ld %d %c",&object_offset_tmp,&object_gen_id_tmp,&object_used_tmp)!=3){
+			if (sscanf(entry,"%ld %d %c",&object_offset_tmp,&object_gen_id_tmp,&object_used_tmp)!=3){
 				break;
 			}
 			table=object_table_realoc(table,object_id + object_count);
@@ -341,16 +343,16 @@ int pdf_xreftable_get(MYFILE * f,pdf_object_table * table,long xref_poz, char * 
 			elm->used=object_used_tmp;
 			++object_id;
 			--object_count;
-				
+
 		}
 		else{
 			long object_begin_tmp, object_count_tmp;
-			if (sscanf(line,"%ld %ld",&object_begin_tmp,&object_count_tmp)!=2){
+			if (sscanf(entry,"%ld %ld",&object_begin_tmp,&object_count_tmp)!=2){
 				break;
 			}
 			object_id=object_begin_tmp;
 			object_count=object_count_tmp;
-				
+
 		}
 	}
 
@@ -365,7 +367,7 @@ int getPdfHead(page_list_head * p_doc,MYFILE * f,char * line){
 	long i;
 	char * pom;
 	pdf_doc_handle * p_pdf = (pdf_doc_handle *) p_doc->doc->doc;
-	
+
 	while (((i=myfgets(line,LLEN,f,NULL))!=EOF) && (!starts(line,"%PDF-")) && !starts(line,"%!PS-"));
 	if (i!=EOF && !starts(line,"%!PS-"))
 	{
@@ -377,16 +379,16 @@ int getPdfHead(page_list_head * p_doc,MYFILE * f,char * line){
 		if (*pom!='\0'){
 			message(WARN,"Missing new line after PDF head.\n");
 		}
-		if (p_pdf->v_major<1 || p_pdf->v_minor<4 
-		    || p_pdf->v_major==LONG_MIN || p_pdf->v_major==LONG_MAX 
+		if (p_pdf->v_major<1 || p_pdf->v_minor<4
+		    || p_pdf->v_major==LONG_MIN || p_pdf->v_major==LONG_MAX
 		    || p_pdf->v_minor==LONG_MIN || p_pdf->v_minor==LONG_MAX){
 			p_pdf->v_major=1;
 			p_pdf->v_minor=4;
-		}	
+		}
 		return 0;
 	}
 	return -1;
-		
+
 }/*getPdfHead()*/
 
 pdf_page_handle * pdf_page_empty(){
@@ -454,8 +456,8 @@ pdf_object *  pdf_read_object_form_file(MYFILE *  f, int major, int minor, pdf_o
 			if (pdf_get_object(f,&pom_object,xref,NULL)==-1){
 				message(FATAL,"Read object %d %010ld %05d\n",major,offset, minor);
 			}
-			
-			if (pom_object.val.reference.major!=major 
+
+			if (pom_object.val.reference.major!=major
 			|| pom_object.val.reference.minor!=minor){
 				message(FATAL, "Major or minor number in object are mismatched.\n");
 			}
@@ -470,7 +472,7 @@ int pdf_read_objects(pdf_object_table * xref, MYFILE*f){
 	int count=0;
 #endif
 	pdf_object pom_object;
-	
+
 	/*fix for some bad xref tables*/
 	if (xref->table[0].used!='f'){
 		xref->table[0].used='f';
@@ -488,7 +490,7 @@ int pdf_read_objects(pdf_object_table * xref, MYFILE*f){
 					xref->table[i].used='f';
 					continue;
 				}
-				
+
 				if (myfseek(f,xref->table[i].offset,SEEK_SET)==-1){
 					message(FATAL,"Seek error\n");
 				}
@@ -516,7 +518,7 @@ int pdf_read_objects(pdf_object_table * xref, MYFILE*f){
 				break;
 			default:
 				xref->table[i].used='f';
-				
+
 				break;
 		}
 	}
@@ -581,7 +583,7 @@ int object_table_ent_insert(pdf_object_table * table, pdf_object * pobj){
 
 int pdf_object_table_ent_delete(pdf_object_table * table, int major, int minor){
 	int i=0;
-	if (table->count<major || table->table[major].minor!=minor 
+	if (table->count<major || table->table[major].minor!=minor
 	    || table->table[major].used!='n')
 	{
 		message(FATAL, "freeing unalocated object from xref table.\n");
@@ -734,13 +736,13 @@ static int _getPdfPages(page_list_head * p_doc,MYFILE *f, int major, int minor){
 					pdf_merge_two_dict(tmp,resources_tmp);
 					pdf_delete_object(resources_tmp);
 					free(resources_tmp);
-				
+
 				}
 				else {
 					tmp = pdf_add_dict_name_value(next_page, "Resources");
 					pdf_copy_object(tmp,resources);
 				}
-				
+
 			}
 			_getPdfPages(p_doc,f,arr->obj->val.reference.major,arr->obj->val.reference.minor);
 		}
@@ -774,7 +776,7 @@ static int _getPdfPages(page_list_head * p_doc,MYFILE *f, int major, int minor){
 		}
 
 		pdf_filter_dict(pobj,page_filter);
-		
+
 		content=pdf_page_empty();
 		content->major=major;
 		content->minor=minor;
@@ -851,12 +853,12 @@ int getPdfTrailer(page_list_head *  p_doc, MYFILE * f, char * line,long offset){
 		for(n=0;n<PDF_TRAILER_OFFSET && (c=mygetc(f))!=EOF;++n){
 			buf[n]=c;
 		}
-		
+
 		buf[n]='\0';
 		/* find startxref*/
-	        for (i = n - 9; i >= 0; --i) { 
+	        for (i = n - 9; i >= 0; --i) {
 		   if (!strncmp((char *)(buf+i), "startxref", 9)) {
-		       break;  
+		       break;
 		   }
                }
 	    if (i < 0) {
@@ -869,8 +871,8 @@ int getPdfTrailer(page_list_head *  p_doc, MYFILE * f, char * line,long offset){
 
 	if (pdf_xreftable_get(f,&(p_pdf->table),offset,line)!=0){
 		message(FATAL,"xreftable read error\n");
-		return -1;	
-	} 
+		return -1;
+	}
 	while (!starts(line,"trailer")){
 		if (myfgets(line,LLEN,f,NULL)!=EOF){
 			message(FATAL,"Error during reading trailer\n");
@@ -878,13 +880,13 @@ int getPdfTrailer(page_list_head *  p_doc, MYFILE * f, char * line,long offset){
 		}
 	}
 	p_trailer=pdf_new_object();
-	if (p_trailer==NULL 
+	if (p_trailer==NULL
 	   || pdf_get_object(f,p_trailer,&p_pdf->table,NULL)==-1
 	   || p_trailer->type!=PDF_OBJ_DICT){
 		message(FATAL,"Error during reading trailer.\n");
 		return -1;
 	}
-	pom_object=pdf_get_dict_name_value(p_trailer,"Prev"); 
+	pom_object=pdf_get_dict_name_value(p_trailer,"Prev");
 	if (pom_object!=NULL){
 		if (pom_object->type!=PDF_OBJ_INT){
 			message(FATAL,"Object in dict of trailer Prev is not int.\n");
@@ -893,7 +895,7 @@ int getPdfTrailer(page_list_head *  p_doc, MYFILE * f, char * line,long offset){
 		if (getPdfTrailer(p_doc,f,line,pom_object->val.int_number)==-1){
 			return -1;
 		}
-		
+
 		pdf_merge_two_dict(p_trailer,p_pdf->trailer);
 		free(p_pdf->trailer);
 	}
@@ -940,8 +942,8 @@ int make_pages_tree(int * nodes, int pages_count, pdf_object_table * table){
 			pobj=pdf_new_object();
 
 			pobj->type=PDF_OBJ_INDIRECT_REF;
-			pobj->val.reference.major=nodes[i * NODE_MAX + j];	
-			pobj->val.reference.minor=TABLE_GET_ELM(table,nodes[i * NODE_MAX + j]).minor;	
+			pobj->val.reference.major=nodes[i * NODE_MAX + j];
+			pobj->val.reference.minor=TABLE_GET_ELM(table,nodes[i * NODE_MAX + j]).minor;
 			pom_array=(pdf_array *)malloc(sizeof(pdf_array));
 			if (pom_array==NULL){
 				return -1;
@@ -1035,7 +1037,7 @@ int pdf_save(page_list_head * p_doc, const char * filename){
 		for (page = page_next(page_begin(p_doc)), i=0;page!=page_end(p_doc);page=page_next(page), ++i){
 			pages[i]=get_page_content(page)->major;
 			pages[i + pages_count(p_doc)]=get_page_content(page)->minor;
-			
+
 		}
 	}
 	fprintf(f,"%%PDF-%ld.%ld\n",get_pdf_handle(p_doc)->v_major,get_pdf_handle(p_doc)->v_minor);
@@ -1112,7 +1114,7 @@ int pdf_open(page_list_head * p_doc,const char * fname){
 	}
 	getPdfPages(p_doc,f);
 	myfclose(f); /*uzavreme vstupni soubor*/
-	
+
 	return 0;
 }/*END readPdfFile()*/
 
@@ -1123,12 +1125,12 @@ int pdf_structure_merge(pdf_doc_handle * s1, pdf_doc_handle * s2){
 	if (s1==s2){
 		return 0;
 	}
-	
+
 	offset=s1->table.count;
 	object_table_realoc(&s1->table,s1->table.count+s2->table.count-1);
 	for (i=1;i<s2->table.count;++i){
 		s2->table.table[i].major=i+offset-1;
-		s2->table.table[i].minor=0;	
+		s2->table.table[i].minor=0;
 	}
 	update_page_ref(s2->p_doc);
 	update_obj_ref(s2->p_doc);
@@ -1148,7 +1150,7 @@ pdf_doc_handle * pdf_structure_new(pdf_doc_handle * old){
 		old->refcounter++;
 		return old;
 	}
-	
+
 	p_pdf=(pdf_doc_handle *) malloc(sizeof(pdf_doc_handle));
 
 	if (p_pdf==NULL){
@@ -1212,7 +1214,7 @@ static int pdf_page_to_xobj(page_handle * pg_handle){
 	int major;
 	pdf_object * new_page, * new_page_contents, * new_page_xobject, * contents, * pg, * pom, * xobj_val;
 	pdf_page_handle * page = (pdf_page_handle *)pg_handle->page;
-	pdf_doc_handle * p_pdf = get_pdf_handle(pg_handle); 
+	pdf_doc_handle * p_pdf = get_pdf_handle(pg_handle);
 	char * str;
 	char * xobjname;
 	char * stream_content = NULL;
@@ -1225,7 +1227,7 @@ static int pdf_page_to_xobj(page_handle * pg_handle){
 	get_object_(pg,p_pdf,page->major,page->minor);
 
 /*	pdf_set_boundaries(&pg_handle->paper,pdf_add_dict_name_value(pg,"MediaBox"));*/
-	
+
 	/*create new_page object*/
 	new_page=pdf_new_object();
 	assert(pdf_get_object_from_str(new_page,"<</Type /Page \n  /Contents 0 0 R  /Parent 0 0 R /Resources << /ProcSet [ /PDF ]  /XObject <<  >> \n >> \n >>")==0);
@@ -1245,7 +1247,7 @@ static int pdf_page_to_xobj(page_handle * pg_handle){
 	((pdf_page_handle *)pg_handle->page)->minor=p_pdf->table.table[major].minor;
 	((pdf_page_handle *)pg_handle->page)->compressed=0;
 
-	
+
 	pom=pdf_get_dict_name_value(pg,"Contents");
 	if (pom==NULL){
 		asprintf(&stream_content,"q Do Q");
@@ -1263,7 +1265,7 @@ static int pdf_page_to_xobj(page_handle * pg_handle){
 
 					xobj_val->type = PDF_OBJ_INDIRECT_REF;
 					xobj_val->val.reference.major = major;
-					xobj_val->val.reference.minor = p_pdf->table.table[major].minor;	
+					xobj_val->val.reference.minor = p_pdf->table.table[major].minor;
 
 					asprintf(&stream_content,"q /%s Do Q",xobjname);
 					free(xobjname);
@@ -1284,7 +1286,7 @@ static int pdf_page_to_xobj(page_handle * pg_handle){
 					else {
 						major = pdf_decompress_stream(p_pdf,p_array->obj->val.reference.major,p_array->obj->val.reference.minor);
 					}
-					
+
 					get_object_(new_stream,p_pdf,major,p_pdf->table.table[major].minor);
 					for (p_array=p_array->next;p_array!=(pdf_array*)&pom->val.array;p_array=p_array->next){
 
@@ -1309,7 +1311,7 @@ static int pdf_page_to_xobj(page_handle * pg_handle){
 
 					xobj_val->type = PDF_OBJ_INDIRECT_REF;
 					xobj_val->val.reference.major = major;
-					xobj_val->val.reference.minor = p_pdf->table.table[major].minor;	
+					xobj_val->val.reference.minor = p_pdf->table.table[major].minor;
 
 					asprintf(&stream_content,"q /%s Do Q",xobjname);
 					free(xobjname);
@@ -1326,9 +1328,9 @@ static int pdf_page_to_xobj(page_handle * pg_handle){
 						pdf_add_dict_name_value(new_page_xobject,xobjname);
 						xobj_val = pdf_add_dict_name_value(new_page_xobject,xobjname);
 						xobj_val->type = PDF_OBJ_INDIRECT_REF;
-						
+
 						xobj_val->val.reference.major = major;
-						xobj_val->val.reference.minor = p_pdf->table.table[major].minor;	
+						xobj_val->val.reference.minor = p_pdf->table.table[major].minor;
 						if (stream_content == NULL){
 							asprintf(&stream_content," /%s Do ",xobjname);
 						}
@@ -1356,7 +1358,7 @@ static int pdf_page_to_xobj(page_handle * pg_handle){
 	major=object_table_ent_insert(&p_pdf->table,contents);
 	new_page_contents->type = PDF_OBJ_INDIRECT_REF;
 	new_page_contents->val.reference.major = major;
-	new_page_contents->val.reference.minor = p_pdf->table.table[major].minor;	
+	new_page_contents->val.reference.minor = p_pdf->table.table[major].minor;
 
 	return 0;
 }
@@ -1374,27 +1376,27 @@ int pdf_merge_stream(pdf_doc_handle * p_pdf,pdf_object * stream1, pdf_object * s
 
 	if (begin){
 		memcpy(ptn,begin, strlen(begin));
-		ptn += strlen(begin); 
+		ptn += strlen(begin);
 	}
 
 	if (stream1){
 		memcpy(ptn,stream1->val.stream.stream,stream1->val.stream.len);
 		ptn += stream1->val.stream.len;
 	}
-	
+
 	if (sep){
 		memcpy(ptn,sep, strlen(sep));
-		ptn += strlen(sep); 
+		ptn += strlen(sep);
 	}
 
 	if (stream2){
 		memcpy(ptn,stream2->val.stream.stream,stream2->val.stream.len);
 		ptn += stream2->val.stream.len;
 	}
-	
+
 	if (end){
 		memcpy(ptn,end, strlen(end));
-		ptn += strlen(end); 
+		ptn += strlen(end);
 	}
 
 	return object_table_ent_insert(&p_pdf->table,stream);
@@ -1422,9 +1424,9 @@ int pdf_page_transform(page_handle * pg_handle, transform_matrix * matrix){
 	if (stream1->val.stream.len==0){
 		return 0;
 	}
-	
-	asprintf(&ct,"q %.2f %.2f %.2f %.2f %.2f %.2f cm\n",   (*matrix)[0][0], (*matrix)[0][1], 
-								 (*matrix)[1][0], (*matrix)[1][1], 
+
+	asprintf(&ct,"q %.2f %.2f %.2f %.2f %.2f %.2f cm\n",   (*matrix)[0][0], (*matrix)[0][1],
+								 (*matrix)[1][0], (*matrix)[1][1],
 								 (*matrix)[2][0], (*matrix)[2][1]);
 	major = pdf_merge_stream(p_pdf,stream1,NULL,ct," Q",NULL);
 	free(ct);
@@ -1454,7 +1456,7 @@ int pdf_page_line(page_handle * pg_handle, const coordinate * begin, const coord
 
 	pom=pdf_get_dict_name_value(page,"Contents");
 	get_object_(stream,p_pdf, pom->val.reference.major, pom->val.reference.minor);
-	major = pdf_merge_stream(p_pdf,stream,NULL,NULL,ch,NULL); 
+	major = pdf_merge_stream(p_pdf,stream,NULL,NULL,ch,NULL);
 	free(ch);
 
 	pom=pdf_add_dict_name_value(new_page,"Contents");
@@ -1475,7 +1477,7 @@ int pdf_page_text(page_handle * pg_handle, const coordinate * where, const char 
 	pdf_object * font_obj, *page, *new_page, *stream, * pom;
 	pdf_doc_handle * p_pdf = (pdf_doc_handle *)pg_handle->doc->doc;
 	int major;
-	
+
 
 	assert(p_pdf!=NULL);
 	pdf_page_to_xobj(pg_handle);
@@ -1505,7 +1507,7 @@ int pdf_page_text(page_handle * pg_handle, const coordinate * where, const char 
 	}
 	asprintf(&ch,"F%s",font);
 	pom=pdf_add_dict_name_value(pom,ch);
-	free(ch);	
+	free(ch);
 	if (pom->type!=PDF_OBJ_DICT){
 		asprintf(&str,"<< /Type /Font /Subtype /Type1 /BaseFont /%s /Name /F%s /Encoding /MacRomanEncoding >>",font, font);
 		font_obj = pdf_new_object();
@@ -1517,9 +1519,9 @@ int pdf_page_text(page_handle * pg_handle, const coordinate * where, const char 
 		pom->val.reference.minor=p_pdf->table.table[major].minor;
 	}
 	asprintf(&ch, " q BT /F%s %d Tf \n %d %d Td\n (%s) Tj ET Q", font ,size, where->x, where->y, text);
-	major = pdf_merge_stream(p_pdf,NULL,stream,NULL,ch,NULL); 
+	major = pdf_merge_stream(p_pdf,NULL,stream,NULL,ch,NULL);
 	free(ch);
-	
+
 	pom=pdf_add_dict_name_value(new_page,"Contents");
 	pom->type=PDF_OBJ_INDIRECT_REF;
 	pom->val.reference.major=major;
@@ -1548,7 +1550,7 @@ int pdf_page_crop(page_handle * pg_handle,dimensions * dimensions){
 		return 0;
 	}
 	asprintf(&ch,"q %d %d %d %d re W n ", dimensions->left.x, dimensions->left.y, dimensions->right.x - dimensions->left.x,  dimensions->right.y - dimensions->left.y);
-	major = pdf_merge_stream(p_pdf,NULL,stream,ch," Q",NULL); 
+	major = pdf_merge_stream(p_pdf,NULL,stream,ch," Q",NULL);
 	free(ch);
 
 	pom=pdf_add_dict_name_value(new_page,"Contents");
@@ -1573,7 +1575,7 @@ int stream_to_xobj(pdf_doc_handle * p_pdf, pdf_object * contents, pdf_object * p
 	}
 	assert(isStream(contents));
 	xobj = pdf_new_object();
-	
+
 	pdf_copy_object(xobj,contents);
 
 	pom=pdf_add_dict_name_value(xobj->val.stream.dict,"Type");
@@ -1587,7 +1589,7 @@ int stream_to_xobj(pdf_doc_handle * p_pdf, pdf_object * contents, pdf_object * p
 	pdf_delete_object(pom);
 	pom->type=PDF_OBJ_INT;
 	pom->val.int_number=1;
-	
+
 	pom=pdf_add_dict_name_value(xobj->val.stream.dict,"BBox");
 	pdf_delete_object(pom);
 	pom2=get_dict_name_value_type(pg, "MediaBox", PDF_OBJ_ARRAY);
@@ -1596,8 +1598,8 @@ int stream_to_xobj(pdf_doc_handle * p_pdf, pdf_object * contents, pdf_object * p
 #ifdef TMATRIX
 	pom=pdf_add_dict_name_value(xobj->val.stream.dict,"Matrix");
 	pdf_delete_object(pom);
-	asprintf(&str,"[ %.2f %.2f %.2f %.2f %.2f %.2f ]",   (*matrix)[0][0], (*matrix)[0][1], 
-								 (*matrix)[1][0], (*matrix)[1][1], 
+	asprintf(&str,"[ %.2f %.2f %.2f %.2f %.2f %.2f ]",   (*matrix)[0][0], (*matrix)[0][1],
+								 (*matrix)[1][0], (*matrix)[1][1],
 								 (*matrix)[2][0], (*matrix)[2][1]);
 	assert(pdf_get_object_from_str(pom,str)==0);
 	free(str);
@@ -1608,18 +1610,18 @@ int stream_to_xobj(pdf_doc_handle * p_pdf, pdf_object * contents, pdf_object * p
 		pdf_delete_object(pom);
 
 		switch(pom2->type){
-		case PDF_OBJ_INDIRECT_REF:	
+		case PDF_OBJ_INDIRECT_REF:
 			get_object_(pom2,p_pdf, pom2->val.reference.major, pom2->val.reference.minor);
 		case PDF_OBJ_DICT:
 			pdf_copy_object(pom,pom2);
 			break;
 		default:
 			assert(0);
-		
+
 		}
 	}
 	pdf_filter_dict(xobj,xobject_filter);
-	return object_table_ent_insert(&p_pdf->table, xobj);	
+	return object_table_ent_insert(&p_pdf->table, xobj);
 
 }
 
@@ -1654,12 +1656,12 @@ int pdf_page_merge(page_handle * p1, page_handle *p2){
 		pdf_merge_two_dict(xobj1, pom);
 		free(pom);
 	}
-	
+
 	pom=pdf_get_dict_name_value(page1,"Contents");
 	get_object_(stream1,p_pdf, pom->val.reference.major, pom->val.reference.minor);
 	pom=pdf_get_dict_name_value(page2,"Contents");
 	get_object_(stream2,p_pdf, pom->val.reference.major, pom->val.reference.minor);
-	
+
 	major = pdf_merge_stream(p_pdf,stream1,stream2,NULL,NULL," ");
 	pom=pdf_add_dict_name_value(new_page,"Contents");
 	pom->type=PDF_OBJ_INDIRECT_REF;
@@ -1733,7 +1735,7 @@ int pdf_compress_stream(pdf_doc_handle * p_pdf, int major, int minor, char * fil
 			asprintf(&ch,"/%s",filter);
 			assert(pdf_get_object_from_str(pom_array->obj,ch)==0);
 			free(ch);
-			break;	
+			break;
 		case PDF_OBJ_NAME:
 			asprintf(&ch," [ /%s /%s ] ",p_obj->val.name,filter);
 			pdf_delete_object(p_obj);
@@ -1745,7 +1747,7 @@ int pdf_compress_stream(pdf_doc_handle * p_pdf, int major, int minor, char * fil
 		}
 	}
 	return major;
-		
+
 }
 
 int pdf_decompress_stream(pdf_doc_handle * p_pdf, int major, int minor){
@@ -1765,7 +1767,7 @@ int pdf_decompress_stream(pdf_doc_handle * p_pdf, int major, int minor){
 	switch (p_obj->type){
 	case PDF_OBJ_ARRAY:
 		{
-		
+
 		new_stream = pdf_new_object();
 		pdf_copy_object(new_stream,stream);
 		pdf_del_dict_name_value(new_stream->val.stream.dict, "Filter");

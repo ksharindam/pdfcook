@@ -35,17 +35,17 @@ static int mystring_add_char(mystring * s,char c){
 	s->str[s->cpoz]=0;
 	++(s->cpoz);
 	return 0;
-	
+
 }
 long pdf_get_obj_poz(pdf_object_table * xref, pdf_object * p_obj){
-	if ( xref==NULL 
-		|| p_obj==NULL 
+	if ( xref==NULL
+		|| p_obj==NULL
 		|| p_obj->type!=PDF_OBJ_INDIRECT_REF)
 	{
 		return -1;
 	}
-	if (xref->count<=p_obj->val.reference.major 
-	    || xref->table[p_obj->val.reference.major].minor!=p_obj->val.reference.minor 
+	if (xref->count<=p_obj->val.reference.major
+	    || xref->table[p_obj->val.reference.major].minor!=p_obj->val.reference.minor
 	    || xref->table[p_obj->val.reference.major].used!='n')
 	{
 		return -1;
@@ -98,7 +98,7 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 			}
 			p_obj->val.reference.major=p_obj->val.int_number;
 			p_obj->val.reference.minor=last_tok->int_number;
-			
+
 			pdf_get_tok(f,last_tok);
 			if (last_tok->type!=PDF_T_ID){
 				pdf_free_tok(last_tok);
@@ -126,7 +126,7 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 				}
 				return 0;
 			}
-			
+
 			if (strcmp(last_tok->id,"R")==0){
 				/*indircet object reference*/
 				p_obj->type=PDF_OBJ_INDIRECT_REF;
@@ -177,7 +177,7 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 							stream_len=pom_obj->val.int_number;
 							break;
 						case PDF_OBJ_INDIRECT_REF:
-							{	
+							{
 							pdf_object plobj;
 							long pos;
 							pos=myftell(f);
@@ -189,7 +189,7 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 								message(FATAL,"in file %s at line %d pdf_get_object() fail\n",__FILE__,__LINE__);
 								return -1;
 							}
-							if (plobj.type!=PDF_OBJ_INDIRECT 
+							if (plobj.type!=PDF_OBJ_INDIRECT
 							    || plobj.val.reference.major!=pom_obj->val.reference.major
 							    || plobj.val.reference.minor!=pom_obj->val.reference.minor
 							    || plobj.val.reference.obj->type!=PDF_OBJ_INT){
@@ -227,9 +227,6 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 					|| strcmp(last_tok->id,"stream")!=0){
 					return -1;
 				}
-				if (stream_len==1){
-					stream_len=0;
-				}
 				switch(mygetc(f)){
 					case EOF:
 						return -1;
@@ -237,14 +234,14 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 						if (mygetc(f)!=char_lf){
 							stream_len-=2;
 							stream_len=stream_len<0?0:stream_len;
-							
+
 						}
 					case char_lf:
 						break;
 					default:
 						myungetc(f);
 						break;
-				}	
+				}
 				p_obj->val.stream.begin=myftell(f);
 				p_obj->val.stream.len=stream_len;
 				if (stream_len){
@@ -267,7 +264,7 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 					|| strcmp(last_tok->id,"endstream")!=0){
 					return -1;
 				}
-				
+
 			}
 			return 0;
 		case PDF_T_BARRAY:
@@ -445,7 +442,7 @@ whend:
 				return -1;
 
 			}
-			
+
 			break;
 		case '[': /*begin array*/
 			p_tok->type=PDF_T_BARRAY;
@@ -453,7 +450,7 @@ whend:
 		case ']': /*end array*/
 			p_tok->type=PDF_T_EARRAY;
 			return 0;
-		case '<': /*hexadecimal string or dictionary*/ 
+		case '<': /*hexadecimal string or dictionary*/
 			if ((c=mygetc(f))=='<'){
 					p_tok->type=PDF_T_BDICT;
 					return 0;
@@ -465,7 +462,7 @@ whend:
 					while (c!=EOF &&c!='>'){
 						mystring_add_char(&mstr,c);
 						c=mygetc(f);
-						
+
 					}
 					if (c=='>'){
 						p_tok->type=PDF_T_STR;
@@ -499,7 +496,7 @@ whend:
 						case '\\':
 							mystring_add_char(&mstr,c);
 							c=mygetc(f);
-							
+
 							break;
 						case '(':
 							++parenthes;
@@ -774,10 +771,10 @@ int pdf_count_size_object (pdf_object * p_obj){
 		 case PDF_OBJ_UNKNOWN:
 			 return sizeof(pdf_object);
 		 case PDF_OBJ_STR:
-			return sizeof(pdf_object) + strlen(p_obj->val.str.str) + 1; 
-	 
+			return sizeof(pdf_object) + strlen(p_obj->val.str.str) + 1;
+
 		 case PDF_OBJ_NAME:
-			return sizeof(pdf_object) + strlen(p_obj->val.name) + 1; 
+			return sizeof(pdf_object) + strlen(p_obj->val.name) + 1;
 		 case PDF_OBJ_ARRAY:
 			{
 				pdf_array *  p_array=p_obj->val.array.next;
@@ -828,7 +825,7 @@ int pdf_delete_object (pdf_object * p_obj){
 			 return 0;
 		 case PDF_OBJ_STR:
 			 free(p_obj->val.str.str);
-			return 0;	 
+			return 0;
 		 case PDF_OBJ_NAME:
 			 free(p_obj->val.name);
 			 return 0;
@@ -911,7 +908,7 @@ int pdf_copy_object (pdf_object * new_obj, pdf_object * old_obj){
 			 if (new_obj->val.str.str==NULL){
 				 return -1;
 			 }
-			return 0;	 
+			return 0;
 		 case PDF_OBJ_NAME:
 		 	new_obj->val.name = strdup(old_obj->val.name);
 			assert(new_obj->val.name!=NULL);
@@ -1016,12 +1013,12 @@ int pdf_merge_two_dict(pdf_object * d1, pdf_object *d2){
 			it=it->next;
 			if ((pom_obj=pdf_get_dict_name_value(d1,pom_it->name))==NULL){
 				__list_elm_remove(pom_it);
-				__list_add((pdf_dict *) &(d1->val.dict),pom_it);				
+				__list_add((pdf_dict *) &(d1->val.dict),pom_it);
 			}else{
 				/*pdf_merge_two_dict(it->obj,pom_obj);*/
 
 			}
-			
+
 		}
 		pdf_delete_object(d2);
 		return 0;
