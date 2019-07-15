@@ -15,7 +15,7 @@ int slow_mygetc(MYFILE * f)
 	if (myfeof(f)){
 		return EOF;
 	}
-		
+
 	len=fread(f->buf,sizeof(char),BUFSIZE,f->f);
 	f->pos +=len;
 	f->ptr=f->buf;
@@ -51,9 +51,9 @@ MYFILE * stropen(const char * str){
 	if (f->buf==NULL){
 		free(f);
 		vdoc_errno=VDOC_ERR_LIBC;
-		return NULL;	
+		return NULL;
 	}
-	strncpy((char *)f->buf,str,len+1);
+	strcpy((char *)f->buf,str);
 	f->pos=len;
 	f->f=NULL;
 	f->ptr=f->buf;
@@ -64,7 +64,7 @@ MYFILE * stropen(const char * str){
 }
 
 MYFILE * myfopen(const char * filename,const char * mode)
-{ 
+{
 	MYFILE * f;
 	f=(MYFILE *) malloc (sizeof(MYFILE));
 	if (f==NULL){
@@ -75,11 +75,11 @@ MYFILE * myfopen(const char * filename,const char * mode)
 	if (f->buf==NULL){
 		free(f);
 		vdoc_errno=VDOC_ERR_LIBC;
-		return NULL;	
+		return NULL;
 	}
 	/*standardni vstup ...*/
 	f->f=fopen(filename,mode);
-	
+
 	if (f->f==NULL)
 	{
 		free(f->buf);
@@ -156,7 +156,7 @@ long myfgets(char * line,int len,MYFILE * f,int * eoln)
 /*	char * pom=line;*/
 	--len;
 	llen=len-1;
-		
+
 	if (len<=0 || myfeof(f))
 	{
 		*line=0;
@@ -194,11 +194,11 @@ long myfgets(char * line,int len,MYFILE * f,int * eoln)
 				lend=CR;
 				myungetc(f);
 			}
-		break;	
+		break;
 	}
 	if (eoln)
 	{
-	
+
 		*eoln=lend;
 	}
 	*line=0;
@@ -211,7 +211,7 @@ long myfgets(char * line,int len,MYFILE * f,int * eoln)
 a doplni je dle konstanty prislusnym koncem radku dle "lend"
 vraci 0 pri uspesnem zapisu jinak EOF
 */
-int swrite (FILE * dst,char * co,size_t delka,int lend){ 
+int swrite (FILE * dst,char * co,size_t delka,int lend){
 
 	if(!dst)
 	{
@@ -219,20 +219,20 @@ int swrite (FILE * dst,char * co,size_t delka,int lend){
 	}
 
 	while (delka>BUFSIZE)
-	{	
+	{
 		/*nepodarilo se vse zapsat do souboru*/
-		if(fwrite(co,sizeof(char),BUFSIZE,dst)!=BUFSIZE) 
+		if(fwrite(co,sizeof(char),BUFSIZE,dst)!=BUFSIZE)
 			return EOF;
 		co+=BUFSIZE;
 		delka-=BUFSIZE;
 	}
-	
+
 	/*nepodarilo se vse zapsat do souboru*/
-	if(delka && fwrite(co,sizeof(char),delka,dst)!=delka) 
+	if(delka && fwrite(co,sizeof(char),delka,dst)!=delka)
 	{
 		return EOF;
 	}
-	
+
 	switch (lend){
 	case CR:
 		if(fwrite("\r",sizeof(char),1,dst)!=1) /*nepodarilo se vse zapsat do souboru*/
@@ -257,7 +257,7 @@ int swrite (FILE * dst,char * co,size_t delka,int lend){
 \brief zapise vybrany blok na pozici "poz" delky "len" ze souboru "src" na konec souboru "dst"
 vraci 0 pri uspechu, -2 jeden ze souboru neni otevren, EOF chyba pri cteni/zapisu*/
 int bwrite (FILE * src,FILE * dst,long poz,size_t len)
-{ 
+{
 	char buf[BUFSIZE];
 	size_t nacteno,i;
 	if (len==0){
@@ -277,7 +277,7 @@ int bwrite (FILE * src,FILE * dst,long poz,size_t len)
 		if ((nacteno == 0) && !feof(src)){
 			vdoc_errno = VDOC_ERR_LIBC;
 			return -1;
-		}	
+		}
 		if (fwrite(buf,sizeof(char),nacteno,dst)!=BUFSIZE){
 			vdoc_errno = VDOC_ERR_LIBC;
 			return -1;
@@ -289,7 +289,7 @@ int bwrite (FILE * src,FILE * dst,long poz,size_t len)
 		if ((nacteno == 0) && !feof(src)){
 			vdoc_errno = VDOC_ERR_LIBC;
 			return -1;
-		}	
+		}
 		if (fwrite(buf,sizeof(char),nacteno,dst)!=i){
 			vdoc_errno = VDOC_ERR_LIBC;
 			return -1;
@@ -333,7 +333,7 @@ size_t myfrread(void * where, size_t size,size_t nmemb,MYFILE * stream){
 	fpoz=ftell(stream->f);
 	howmuch=size * nmemb < fpoz?size * nmemb:fpoz;
 	fseek(stream->f,fpoz-howmuch,SEEK_SET);
-	howmuch=fread(where,size,howmuch/size, stream->f);	
+	howmuch=fread(where,size,howmuch/size, stream->f);
 	fseek(stream->f,fpoz-howmuch,SEEK_SET);
          stream->pos=0;
 	 stream->ptr=stream->buf;

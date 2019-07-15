@@ -7,7 +7,7 @@
 #include "ps_lib.h"
 
 #include "fileio.h"
-    
+
 #define isDSC(s) (s[0]=='%' && s[1]=='%')
 
 #define get_doc_info \
@@ -191,7 +191,7 @@ static int empty(char * s){
 	\param p2 ukazatel na druhou stranku
 	\retval 0 vse probehlo v poradku
 	\retval -1 nastala nejaka chyba
-*/ 
+*/
 int ps_dsc_2pages_to_one(PAGE * p1, PAGE * p2){
 	p1->data.last->next=p2->data.next;
 	p2->data.next->last=p1->data.last;
@@ -237,7 +237,7 @@ int ps_dsc_2pages_to_one(PAGE * p1, PAGE * p2){
 		free(p1->pend->data);
 	free(p1->pend);
 	/*END odstraneni pstshowpage z p1*/
-    
+
 
 	p1->pshow=p2->pshow;
 	p1->pend=p2->pend;
@@ -248,7 +248,7 @@ int ps_dsc_2pages_to_one(PAGE * p1, PAGE * p2){
 
 /**
 	\brief vytvori pole obsahujici pocdef, s odelovaci radku uvedenem v "lend"
-*/ 
+*/
 static int addMyProcdef(DSC * dsc){
 	size_t i;
 	char * procset;
@@ -289,7 +289,7 @@ static int addMyShowPage(PAGE * page, int lend){
 */
 static int decodeDSC (char * what){
 	int i;
-	if (isDSC(what)) 
+	if (isDSC(what))
 	{
 		for (i=1;*(DSClib+i);++i)
 		{
@@ -411,7 +411,7 @@ static long putHeader(page_list_head * p_doc, FILE * in, FILE * out){
 	if (p_doc->doc->orient!=DOC_O_UNKNOWN){
 		p_doc->doc->orient=p_doc->doc->orient==DOC_O_SEASCAPE?DOC_O_LANDSCAPE:p_doc->doc->orient;
 		p_doc->doc->orient=p_doc->doc->orient==DOC_O_UPSIDE_DOWN?DOC_O_PORTRAIT:p_doc->doc->orient;
-		if (fprintf(out,"%%%%Orientation: %s%s",doc_p_orientation_str[p_doc->doc->orient],lend_str[dsc->eoln])<0){ 
+		if (fprintf(out,"%%%%Orientation: %s%s",doc_p_orientation_str[p_doc->doc->orient],lend_str[dsc->eoln])<0){
 			vdoc_errno = VDOC_ERR_LIBC;
 			return -1;
 		}
@@ -420,10 +420,10 @@ static long putHeader(page_list_head * p_doc, FILE * in, FILE * out){
 		if (!fprintf(out,"%%%%DocumentPaperSizes: %s%s",dimensions_str(doc_get_pformat_name(&(p_doc->doc->paper))),lend_str[dsc->eoln])){
 			vdoc_errno = VDOC_ERR_LIBC;
 			return -1;
-		}	
+		}
 	}
-	if (p_doc->doc->bbox.right.x 
-	    	|| p_doc->doc->bbox.right.y 
+	if (p_doc->doc->bbox.right.x
+	    	|| p_doc->doc->bbox.right.y
 		|| p_doc->doc->bbox.left.x
 		|| p_doc->doc->bbox.left.y
 	   )
@@ -438,7 +438,7 @@ static long putHeader(page_list_head * p_doc, FILE * in, FILE * out){
 			return -1;
 		}
 	}
-	
+
 	if (fprintf(out,"%%%%Pages: %d%s",p_doc->doc->pages_count,lend_str[dsc->eoln])<0){
 		vdoc_errno = VDOC_ERR_LIBC;
 		return -1;
@@ -487,9 +487,9 @@ int ps_dsc_save (page_list_head * p_doc, const char * fnameout){
 		return -1;
 	}
 
-	
 
-	
+
+
 	if (fclose(in)){
 		fclose(out);
 		vdoc_errno = VDOC_ERR_LIBC;
@@ -504,7 +504,7 @@ int ps_dsc_save (page_list_head * p_doc, const char * fnameout){
 	return 0;
 }
 /**
-\brief nacte hlavicku ps-filu 
+\brief nacte hlavicku ps-filu
 */
 static int getHeader(page_list_head * doc,MYFILE * f,char * iobuffer, long *fpoz)
 {
@@ -516,13 +516,13 @@ static int getHeader(page_list_head * doc,MYFILE * f,char * iobuffer, long *fpoz
 	/*skip lines without header signature*/
 	while ((*fpoz=myfgets(line,LLEN,f,&(dsc->eoln))!=EOF) && !starts(line,"%!PS") && !starts(line,"%PDF-"))
 	;
-	
+
 	if (*fpoz==-1 || starts(line,"%PDF-")){
 		return -1;
 	}
 	strncpy(dsc->header.version,line,DSC_VERSION_LEN);
 	dsc->header.begin=*fpoz;
-	
+
 	*fpoz=lwpoz=myfgets(line,LLEN,f,NULL);
 	while (*fpoz!=-1){
 		switch (dsc_code=decodeDSC(line)){
@@ -537,7 +537,7 @@ static int getHeader(page_list_head * doc,MYFILE * f,char * iobuffer, long *fpoz
 			case MYPROCSET:
 			case bprocset:
 			case bprolog:
-			case bdefaults: 
+			case bdefaults:
 			case 0:
 				addblok(&(dsc->header.data),lwpoz,*fpoz,NULL,0);
 				if (doc->doc->paper.right.x==0 || doc->doc->paper.right.y==0){
@@ -570,12 +570,12 @@ static int getDefaults(page_list_head * doc,MYFILE * f,char * iobuffer,long * fp
 		*fpoz=myfgets(line,LLEN,f,NULL);
 	}
 	/*konec souboru*/
-	if (*fpoz==EOF){ 		
+	if (*fpoz==EOF){
 		return -1;
 	}
 
 	/*v dokumentu se nenachazi sekce defaults*/
-	if (t!=bdefaults){ 		
+	if (t!=bdefaults){
 		dsc->defaults.end=dsc->defaults.begin;
 		return 0;
 	}
@@ -587,7 +587,7 @@ static int getDefaults(page_list_head * doc,MYFILE * f,char * iobuffer,long * fp
 		*fpoz=myfgets(line,LLEN,f,NULL);
 		return 0;
 	}
-	
+
 	return -1;
 }/*END getDefaults*/
 
@@ -600,7 +600,7 @@ static int getProlog(page_list_head * doc,MYFILE * f,char * iobuffer, long * fpo
 	int t;
 	char * line = iobuffer;
 	DSC * dsc = (DSC *)  doc->doc->doc;
-	
+
 	*fpoz=lwpoz=dsc->prolog.begin=*fpoz;
 
 	while (*fpoz!=EOF && ((EMPTY==(t=decodeDSC(line))) || COMENT==t)
@@ -612,7 +612,7 @@ static int getProlog(page_list_head * doc,MYFILE * f,char * iobuffer, long * fpo
 	if (*fpoz==EOF){
 		return -1;
 	}
-		
+
 	switch (t)
 	{
 		case eof:
@@ -626,7 +626,7 @@ static int getProlog(page_list_head * doc,MYFILE * f,char * iobuffer, long * fpo
 				t=decodeDSC(line);
 			}
 			while (*fpoz!=EOF && t!=eprocset);
-			
+
 			if (t==eprocset){
 				*fpoz=myfgets(line,LLEN,f,NULL);
 				t=decodeDSC(line);
@@ -637,7 +637,7 @@ static int getProlog(page_list_head * doc,MYFILE * f,char * iobuffer, long * fpo
 			lwpoz=*fpoz;
 			break;
 		case bprocset:
-		default:		
+		default:
 			addblok(&(dsc->prolog.data),lwpoz,*fpoz,NULL,0);
 			lwpoz=*fpoz;
 	}
@@ -645,8 +645,8 @@ static int getProlog(page_list_head * doc,MYFILE * f,char * iobuffer, long * fpo
 	if (addMyProcdef(dsc)==-1){
 		return -1;
 	}
-	
-	while (*fpoz!=EOF && (t=decodeDSC(line))!=eprolog 
+
+	while (*fpoz!=EOF && (t=decodeDSC(line))!=eprolog
 		   && t!=bsetup && t!=page )
 	{
 		*fpoz=myfgets(line,LLEN,f,NULL);
@@ -655,12 +655,12 @@ static int getProlog(page_list_head * doc,MYFILE * f,char * iobuffer, long * fpo
 	/*neocekavany konec souboru*/
 	if (*fpoz==EOF || t==eof)
 		return -1;
-	
+
 	if (t==eprolog)
 	{
 		*fpoz=myfgets(line,LLEN,f,NULL);
 	}
-	
+
 	addblok(&(dsc->prolog.data),lwpoz,*fpoz,NULL,0);
 	dsc->prolog.end=*fpoz;
 	return 0;
@@ -684,7 +684,7 @@ static int getSetup(page_list_head * doc,MYFILE * f,char * iobuffer,long * fpoz)
 	lpoz=*fpoz;
 	t=decodeDSC(line);
 	while (*fpoz!=EOF && page!=(t=decodeDSC(line)) && t!=eof)
-	{	  
+	{
 		if (t==psize){
 			addblok(&(dsc->docsetup.data),lpoz,*fpoz,NULL,0);
 			lpoz=myftell(f);
@@ -727,7 +727,7 @@ static void getPname(char * kam, const char * odkud){
 			++i;++j;
 		}
 		kam[j]=0;
-		
+
 	}
 }/*END getPname()*/
 
@@ -771,7 +771,7 @@ static int getPage(page_list_head * p_doc,MYFILE * f,char * iobuffer,long * fpoz
 	while (*fpoz!=EOF && (t=decodeDSC(line))==EMPTY){
 		*fpoz=myfgets(line,LLEN,f,NULL);
 	}
-	if (*fpoz==EOF ||  t!=page 
+	if (*fpoz==EOF ||  t!=page
 	   || ((new_page=page_new(NULL,0)) == NULL)
 	   )
 	{
@@ -788,12 +788,12 @@ static int getPage(page_list_head * p_doc,MYFILE * f,char * iobuffer,long * fpoz
 	new_page->page->orient=p_doc->doc->orient;
 	memcpy(&(new_page->page->bbox),&(p_doc->doc->bbox),sizeof(dimensions));
 	memcpy(&(new_page->page->paper),&(p_doc->doc->paper),sizeof(dimensions));
-	
+
 	/*preskocit souvislou oblast komentaru*/
-	while ( *fpoz!=EOF &&  (t=decodeDSC(line)) 
-		   && t!=page && t!=eof && t!=ptrailer 
+	while ( *fpoz!=EOF &&  (t=decodeDSC(line))
+		   && t!=page && t!=eof && t!=ptrailer
 		   && t!=trailer && t!=bdoc)
-	{	
+	{
 		t=decodeDSC(line);
 		dsc_code=t;
 		switch(t){
@@ -816,7 +816,7 @@ static int getPage(page_list_head * p_doc,MYFILE * f,char * iobuffer,long * fpoz
 			case SHOWPAGEB: /*vynechani SHOWPAGE, pokud se v dokumentu vyskytuje*/
 			case 0:
 				goto end_wh;
-			
+
 		}
 		*fpoz=myfgets(line,LLEN,f,NULL);
 	}
@@ -848,7 +848,7 @@ end_wh:
 				lwpoz=*fpoz;
 				pom->epsetup=pom->data.last;
 			break;
-			
+
 			case SHOWPAGEB: /*vynechani SHOWPAGE, pokud se v dokumentu vyskytuje*/
 				addblok(&(pom->data),lwpoz,*fpoz,NULL,0);
 				while((*fpoz=myfgets(line,LLEN,f,NULL))!=EOF && (t=decodeDSC(line))!=SHOWPAGEE);
@@ -887,7 +887,7 @@ end_do_while:
 	}
 	/*misto pro vlozeni nove showpage*/
 	addMyShowPage(pom,((DSC*)(p_doc->doc->doc))->eoln);
-	
+
 out:
 	while(*fpoz!=EOF && t!=page && t!=trailer && t!=eof){
 		dsc_code=t;
@@ -926,7 +926,7 @@ static int getPages(page_list_head * doc,MYFILE * f,char * iobuffer, long * fpoz
 	if (pages_count && doc->doc->pages_count!=pages_count){
 		perror("Pocet stranek v dokuentu je jiny  nez je uvedeno v %%Pages:\n");
 	}
-	
+
 	return ret_val==1?0:-1;
 }
 /**
@@ -992,13 +992,14 @@ int ps_dsc_open(page_list_head * doc, const char * fname){
 	if (dsc==NULL){
 		return -1;
 	}
-	doc->doc->doc=dsc;	
+	doc->doc->doc=dsc;
     	/*soubor se nepodarilo otevrit pro cteni*/
 	if ((f=myfopen(fname,"rb"))==NULL){
 		ps_dsc_structure_delete(dsc);
-		return -1; 	
+		return -1;
 	}
-	strncpy(doc->doc->file_name,fname,PATH_MAX);
+	//strncpy(doc->doc->file_name,fname,PATH_MAX);
+	strcpy(doc->doc->file_name,fname);
 
 	if (getHeader(doc,f,iobuffer,&fpoz)==-1){
 		myfclose(f); /*uzavreme vstupni soubor*/
@@ -1041,7 +1042,7 @@ int ps_dsc_open(page_list_head * doc, const char * fname){
 		printf("<e>%d %d %d %d\n",page->page->bbox.left.x,page->page->bbox.left.y,page->page->bbox.right.x,page->page->bbox.right.y);
 #endif
 	}
-			
+
 	return 0;
 }/*END readpsfile()*/
 
@@ -1049,7 +1050,7 @@ int ps_dsc_open(page_list_head * doc, const char * fname){
 \brief odstrani zrusi spojovy seznam*/
 static void freeblok(BLOK * blok){
 	BLOK * pom=blok->next;
-	do{	
+	do{
 		pom=pom->next;
 		if (pom->last!=blok){
 			if (pom->last->data)
@@ -1057,7 +1058,7 @@ static void freeblok(BLOK * blok){
 			free(pom->last);
 		}
 	}while (pom!=blok);
-	
+
 }/*END freeblok()*/
 
 /**
@@ -1131,13 +1132,13 @@ PAGE * ps_dsc_page_new(const PAGE * what){
 				strncpy(retezec,blok->data,strlen(blok->data) + 1);
 			}
 			else{
-				
+
 				retezec=NULL;
 			}
 			addblok(&(pom->data),blok->begin,blok->end,retezec,blok->flag);
 			switch (blok->flag & 0x7f){
 				case tPSETUP:
-					pom->psetup=pom->data.last;					
+					pom->psetup=pom->data.last;
 					break;
 				case tPSHOW:
 					pom->pshow=pom->data.last;
@@ -1157,7 +1158,7 @@ PAGE * ps_dsc_page_new(const PAGE * what){
 			}
 			blok=blok->next;
 		}
-		
+
 
 	}
 	else{
@@ -1187,12 +1188,12 @@ PAGE * ps_dsc_page_new(const PAGE * what){
 \brief prida na konec prvek do spojoveho seznamu
 */
 static int addblok(BLOK * head,long begin,long end,char * data,int flag){
-	
+
 	BLOK * pom;
 	/*blok s nulovou, nebo zapornou velikosti*/
 	if (begin>=end && begin!=0)
 		return 0;
-	
+
 	pom = (BLOK *) malloc(sizeof(BLOK));
 	/*neuspesna alokace pameti*/
 	if (pom==NULL)
@@ -1210,7 +1211,7 @@ static int addblok(BLOK * head,long begin,long end,char * data,int flag){
 	pom->last=head->last;
 	head->last=pom;
 	(pom->last)->next=pom;
-    
+
 	return 0;
 }/*END addblok()*/
 
@@ -1219,9 +1220,9 @@ static int addblok(BLOK * head,long begin,long end,char * data,int flag){
 */
 /*
 static int insertblok(BLOK * where,int begin,int end,char * data,int flag){
-	
+
 	BLOK * pom = (BLOK *) malloc(sizeof(BLOK));
-	
+
 	if (pom==NULL)
 		return 0;
 
@@ -1235,7 +1236,7 @@ static int insertblok(BLOK * where,int begin,int end,char * data,int flag){
 	pom->last=where;
 	where->next=pom;
 	(pom->next)->last=pom;
-    
+
 	return 1;
 
 }*//*EDN insertblok()*/
@@ -1262,7 +1263,7 @@ int ps_dsc_draw_to_page_line(page_handle * pg_handle, const coordinate * begin, 
 	PAGE * page = (PAGE *) (pg_handle->page);
 	if (asprintf(&line,"pstgsave %d pstsetlinewidth pstnewpath %d %d pstmoveto%s %d %d pstlineto pststroke pstgrestore%s",l_width,begin->x,begin->y,eoln,
 				end->x,end->y,eoln)<0
-	||  line==NULL){ 
+	||  line==NULL){
 		vdoc_errno = VDOC_ERR_LIBC;
 		return -1;
 	}
@@ -1289,18 +1290,18 @@ int ps_dsc_page_transform(page_handle * pg_handle, transform_matrix * matrix){
 	char * line;
 	char * eoln = lend_str[((PAGE *)(pg_handle->page))->eoln];
 	PAGE * page = (PAGE *) (pg_handle->page);
-	if (asprintf(&line,"pstgsave  [%.2f %.2f %.2f %.2f %.2f %.2f] pstconcat%s",   (*matrix)[0][0], (*matrix)[0][1], 
-								 (*matrix)[1][0], (*matrix)[1][1], 
+	if (asprintf(&line,"pstgsave  [%.2f %.2f %.2f %.2f %.2f %.2f] pstconcat%s",   (*matrix)[0][0], (*matrix)[0][1],
+								 (*matrix)[1][0], (*matrix)[1][1],
 								 (*matrix)[2][0], (*matrix)[2][1],
 								 eoln)<0
-	|| line==NULL){ 
+	|| line==NULL){
 		vdoc_errno = VDOC_ERR_LIBC;
 		return -1;
 	}
 
 	addblok(page->psetup->next,0,0,line,0);
 	if (asprintf(&line,"pstgrestore%s",eoln)<0
-	|| line==NULL){ 
+	|| line==NULL){
 		vdoc_errno = VDOC_ERR_LIBC;
 		return -1;
 	}
@@ -1320,14 +1321,14 @@ int ps_dsc_set_crop_page(page_handle * pg_handle, dimensions * dimensions){
 								 dimensions->right.x,dimensions->right.y,
 								 dimensions->left.x,dimensions->right.y,
 								 eoln)<0
-	|| line==NULL){ 
+	|| line==NULL){
 		vdoc_errno = VDOC_ERR_LIBC;
 		return -1;
 	}
 	addblok(page->psetup->next,0,0,line,0);
 
 	if (asprintf(&line,"pstgrestore%s",eoln)<0
-	|| line==NULL){ 
+	|| line==NULL){
 		vdoc_errno = VDOC_ERR_LIBC;
 		return -1;
 	}

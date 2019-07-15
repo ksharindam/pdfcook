@@ -1,9 +1,9 @@
-/** 
+/**
  * \file doc_type.h
  * \brief Definici zakladnich typu pro praci s dokumentem.
  */
 
-#ifndef _DOC_TYPE_H_ 
+#ifndef _DOC_TYPE_H_
 #define _DOC_TYPE_H_
 
 #include "limits.h"
@@ -35,8 +35,8 @@ extern char * p_orientation_str[];
 
 /**\brief souradnicovy typ, souradnice se uchovavaji v pixelech 1/72"*/
 typedef struct coordinate{
-	int x;/**<x-ova souradnice*/
-	int y;/**<y-ova souradnice*/
+	int x;
+	int y;
 }coordinate;
 
 /** \brief rozmery papiru, rozmery boundingboxu ...*/

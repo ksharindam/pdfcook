@@ -656,16 +656,16 @@ static int pdf_get_boundaries(dimensions * dim, pdf_object * obj){
 		}
 		switch(i){
 			case 1:
-				dim->left.x = (isReal(arr->obj))?(arr->obj->val.real_number):(arr->obj->val.int_number);
+				dim->left.x = round((isReal(arr->obj))?(arr->obj->val.real_number):(arr->obj->val.int_number));
 				break;
 			case 2:
-				dim->left.y = (isReal(arr->obj))?(arr->obj->val.real_number):(arr->obj->val.int_number);
+				dim->left.y = round((isReal(arr->obj))?(arr->obj->val.real_number):(arr->obj->val.int_number));
 				break;
 			case 3:
-				dim->right.x = (isReal(arr->obj))?(arr->obj->val.real_number):(arr->obj->val.int_number);
+				dim->right.x = round((isReal(arr->obj))?(arr->obj->val.real_number):(arr->obj->val.int_number));
 				break;
 			case 4:
-				dim->right.y = (isReal(arr->obj))?(arr->obj->val.real_number):(arr->obj->val.int_number);
+				dim->right.y = round((isReal(arr->obj))?(arr->obj->val.real_number):(arr->obj->val.int_number));
 				break;
 			default:
 				message(FATAL,"wrong boundaries\n");
