@@ -20,3 +20,9 @@ install:
 
 uninstall:
 	rm /usr/local/bin/pspdftool
+
+installman:
+	cp ../pspdftool.1 /usr/share/man/man1
+
+removeman:
+	rm /usr/share/man/man1/pspdftool.1

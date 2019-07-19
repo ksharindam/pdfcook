@@ -1,7 +1,3 @@
-/**\file cmdexec.c
- * \brief Prikazovy interpret pro knihovnu.
- */
-
 
 #define _GNU_SOURCE
 #include <ctype.h>
@@ -155,12 +151,12 @@ typedef struct def_list_head {
 
 /**struktura pro definici prikazu*/
 typedef struct cmd_entry{
-	char * str; /**<identifikator prikazu*/
-	char *  help;/**<napoveda k prikazu*/
-	int (*proc)(page_list_head *,param params[],cmd_page_list_head *); /**<obsluzna fce prikazu*/
-	param * params;/**<argumenty prikazu*/
-	int params_count;/**<pocet argumentu*/
-	int pages;/**<vyber stranek*/
+	char * str;     // name of the command
+	char *  help;   // text to show as help
+	int (*proc)(page_list_head *,param params[],cmd_page_list_head *);
+	param * params;
+	int params_count;   // 1 if one or more args must be passed, else 0
+	int pages;
 }cmd_entry;
 
 struct unit_val_ent {
@@ -170,7 +166,7 @@ struct unit_val_ent {
 
 struct  cmd_arg_ent {
 	char * part;
-	param * pparam;	
+	param * pparam;
 };
 
 
@@ -214,12 +210,15 @@ static int cmd_matrix(page_list_head * p_doc, param params[], cmd_page_list_head
 static int cmd_spaper(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
 static int cmd_pinfo(page_list_head * p_doc, param params[], cmd_page_list_head * pages);
 
-/* {name, type, default_val_type, default_int_val, default_real_val, default_char_val}*/
+/* {name, type, default_val_type, default_int_val, default_real_val, default_char_val}
+default_value_type = CMD_TOK_UNKNOwN means no default value provided
+if default value type is real, pass argument to default_real_val field only.
+then default_int_val will be 0 and default_char_val will be NULL
+*/
 static param  cmd_read_params[] = {{"name",CMD_TOK_STR,CMD_TOK_UNKNOWN,0,0,NULL}};
 static param  cmd_write_params[] = {{"name",CMD_TOK_STR,CMD_TOK_UNKNOWN,0,0,NULL}};
-static param  cmd_modulo_params[] = {{"pages",CMD_TOK_INT,CMD_TOK_UNKNOWN,0,0,NULL},
-				     {"half",CMD_TOK_INT,CMD_TOK_INT,-1,0,NULL},
-				     {"round",CMD_TOK_INT,CMD_TOK_INT,-1,0,NULL}
+static param  cmd_modulo_params[] = {{"step",CMD_TOK_INT,CMD_TOK_UNKNOWN,0,0,NULL},
+				     {"round",CMD_TOK_INT,CMD_TOK_INT,1,0,NULL}
 				};
 
 static param  cmd_scale_params[] = {{"scale",CMD_TOK_REAL,CMD_TOK_UNKNOWN,0,0,NULL}};
@@ -297,7 +296,7 @@ static param  cmd_spaper_params[] = {{"name",CMD_TOK_ID,CMD_TOK_UNKNOWN,0,0,NULL
 				     {"y",CMD_TOK_MEASURE, CMD_TOK_UNKNOWN,0,0,NULL}};
 
 #define fill_params(p) p,sizeof(p)/sizeof(param)
-/** { name, help, function, parameters, parameters count, use page ranges } */
+/* { name, help, function, parameters, if parameters required, if page ranges required} */
 static cmd_entry cmd_commands[]={
 	{"apply","Apply command(s) to these pages",cmd_apply,NULL,0,1},
 	{"bbox","Recalculate bbox on each page by GS",cmd_bbox,NULL,0,0},
@@ -312,7 +311,7 @@ static cmd_entry cmd_commands[]={
 	{"line","Draw line to page",cmd_line,fill_params(cmd_line_params),0},
 	{"matrix","Transform by matrix",cmd_matrix,fill_params(cmd_matrix_params),0},
 	{"merge","Merge all pages to one page",cmd_merge,NULL,0},
-	{"modulo", "Select pages",cmd_modulo,fill_params(cmd_modulo_params),1},
+	{"modulo", "Advanced Select pages (see manual page)",cmd_modulo,fill_params(cmd_modulo_params),1},
 	{"move","Move or translate page by x and y points",cmd_move,fill_params(cmd_move_params),0},
 	{"new","Append a new page",cmd_new,NULL,0,1},
 	{"norm","Normalize pages to same size",cmd_norm,fill_params(cmd_norm_params),0},
@@ -357,7 +356,7 @@ static cmd_page_list * cmd_add_range(cmd_ent_struct * cmd, long begin, long end,
 	cmd_page_list * new_range = (cmd_page_list*) malloc(sizeof(cmd_page_list));
 
 	if (new_range == NULL) {
-		vdoc_errno=VDOC_ERR_LIBC;	
+		vdoc_errno=VDOC_ERR_LIBC;
 		message(FATAL,"malloc() error");
 		assert(0);
 		return NULL;
@@ -391,12 +390,12 @@ static int cmd_sort_range(cmd_page_list_head * sorted,cmd_page_list_head * unsor
 		pom=(cmd_page_list *)malloc(sizeof(cmd_page_list));
 
 		if (pom == NULL) {
-			vdoc_errno=VDOC_ERR_LIBC;	
+			vdoc_errno=VDOC_ERR_LIBC;
 			message(FATAL,"malloc() error");
 			assert(0);
 			return -1;
 		}
-		
+
 		memcpy(pom,it1,sizeof(cmd_page_list));
 
 		if (pom->range[0]==-1){
@@ -423,7 +422,7 @@ static int cmd_sort_range(cmd_page_list_head * sorted,cmd_page_list_head * unsor
 		/*insert sorted range*/
         it2=sorted->next;
         if (it1->page_set!=0){ // split pages for even/odd set
-            int first = pom->range[0]; 
+            int first = pom->range[0];
             int last = pom->range[1];
             pom->range[1] = first;
             for (;first<=last;first++){
@@ -523,7 +522,7 @@ static int cmd_get_pages_args(MYFILE * f, cmd_ent_struct * cmd, cmd_tok_struct *
 				break;
 			default:
 				return -1;
-			
+
 		}
 	}
 	return -1;
@@ -532,7 +531,7 @@ static cmd_param * cmd_add_param(cmd_ent_struct * cmd, char * p_name){
 	cmd_param * new_param = (cmd_param *)  malloc(sizeof(cmd_param));
 
 	if (new_param == NULL) {
-		vdoc_errno=VDOC_ERR_LIBC;	
+		vdoc_errno=VDOC_ERR_LIBC;
 		message(FATAL,"malloc() error");
 		assert(0);
 		return NULL;
@@ -845,7 +844,7 @@ static int cmd_exec_command_(page_list_head * p_doc,cmd_ent_struct * cmd,int ind
 				assert(0);
 		}
 	}
-		
+
 	/*pojmenovane argumenty*/
 	for(;argument!=(cmd_param *)(&cmd->params) &&  argument->name[0]!=0;
 	    argument=argument->next)
@@ -970,7 +969,7 @@ static int cmd_exec_tree(page_list_head * p_doc,cmd_ent_struct_head * cmd_tree, 
 		}
 		pom=pom->next;
 	}
-	return 0;	
+	return 0;
 }
 static void cmd_free_range(cmd_page_list_head *range){
 	cmd_page_list * pom = range->next, * pom2;
@@ -990,7 +989,7 @@ static void cmd_free_args(cmd_param_head * params){
 		pom=pom->next;
 		free(pom2);
 	}
-	
+
 }
 static void cmd_free_tree(cmd_ent_struct_head * cmd_tree){
 	cmd_ent_struct  * pom=cmd_tree->next, * pom2;
@@ -1001,7 +1000,7 @@ static void cmd_free_tree(cmd_ent_struct_head * cmd_tree){
 		pom=pom->next;
 		free(pom2);
 	}
-	
+
 	return;
 }
 
@@ -1026,7 +1025,7 @@ int cmd_exec(page_list_head * p_doc, cmd_ent_struct_head * cmd_tree ,MYFILE * f)
 	}
 	cmd_free_tree(cmd_tree);
 	return 0;
-	
+
 }
 
 #define update_poz\
@@ -1058,7 +1057,7 @@ int cmd_exec(page_list_head * p_doc, cmd_ent_struct_head * cmd_tree ,MYFILE * f)
 /**tokenizer for cmdexec parser*/
 static int cmd_get_token(MYFILE * f,cmd_tok_struct * structure){
 	int c,i;
-	int * column = &f->column; 
+	int * column = &f->column;
 	int * row = &f->row;
 	int * lastc = &f->lastc;
 	int * next_token=&f->scratch;
@@ -1084,7 +1083,7 @@ static int cmd_get_token(MYFILE * f,cmd_tok_struct * structure){
 		case  '}':
 			structure->token=CMD_TOK_RCPAR;
 			return 0;
-		case '(': 
+		case '(':
 			structure->token=CMD_TOK_LPAR;
 			return 0;
 		case ')':
@@ -1109,7 +1108,7 @@ static int cmd_get_token(MYFILE * f,cmd_tok_struct * structure){
 			return 0;
 		case '"':
 			for(i=0,c=mygetc(f);c!=EOF && c!='"' && i<STR_MAX-1 ;c=mygetc(f),++i){
-				structure->str[i]=c;	
+				structure->str[i]=c;
 			}
 			structure->str[i]=0;
 			if (c=='"'){
@@ -1188,7 +1187,7 @@ static int cmd_get_token(MYFILE * f,cmd_tok_struct * structure){
 				i=1;
 				while(i<STR_MAX-1 && (c=mygetc(f))!=EOF && (isalnum(c) || c=='.' || c=='_' || c=='-' || c=='/')){
 					update_poz;
-					structure->str[i]=c;	
+					structure->str[i]=c;
 					++i;
 				}
 				if (c!=EOF){
@@ -1223,15 +1222,14 @@ static int cmd_write(page_list_head * p_doc, param params[], cmd_page_list_head 
 }
 
 static int cmd_select(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
-	param p[3];
+	param p[2];
 	p[0].type=CMD_TOK_INT;
 	p[0].int_number=pages_count(p_doc);
 	p[1].type=CMD_TOK_INT;
-	p[1].int_number=0;
-	p[2].type=CMD_TOK_INT;
-	p[2].int_number=pages_count(p_doc);
+	p[1].int_number=1;
 	return cmd_modulo(p_doc,p,pages);
 }
+
 static int cmd_book(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
 	int i;
 	page_list * p1,*p2,*p3,*p4;
@@ -1297,40 +1295,30 @@ static int cmd_book2(page_list_head * p_doc, param params[], cmd_page_list_head 
 	return 0;
 }
 
+/*
+this command iterate pages by given step.
+such as if step=4, index are 0, 4, 8, 12 ...
+if command is modulo(4){1 2 3} then chosen pages are
+for index 0 -> 4*0+1, 4*0+2, 4*0+3 = 1, 2, 3
+for index 1 -> 5, 6, 7
+thus page numbers will be in 1,2,3,5,6,7,9,10,11.. order
+if command is modulo(4){-1}
+selected pages are -(4*0+1),  -(4*1+1), -(4*2+1), -(4*3+1) ...
+= -1, -5, -9, -13, ...
+round option adds extra blank pages to make total page count multiple of round
+*/
 static int cmd_modulo(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
 	page_list_head * range, * new;
 	page_list * new_page, * page_end;
 	cmd_page_list * ranges;
 	int invers;
 	int pages_count;
-	int i=1,modulo=params[0].int_number;
-	int half = params[1].int_number;
-	int round = params[2].int_number;
-	int positive = 0;
-	int negative = 0;
 
-	if (half==-1){
-		half=0;
-		for (ranges=pages->next;ranges!=(cmd_page_list*)pages;ranges=ranges->next){
-			if (ranges->negativ_range){
-				negative = 1;
-			}
-			else {
-				positive = 1;
-			}
-			if (negative && positive){
-				half = 1;
-				break;
-			}
-		}
-	}
+    int modulo=params[0].int_number;
+	int round = params[1].int_number;
 
-	if (round==-1){
-		round=half?2*modulo:modulo;
-	}
-	else {
-		round = max(round,modulo);
-	}
+    round = max(round,modulo);
+    // add blank pages to make page_count integral multiple of round
 	while (pages_count(p_doc)%round){
 		page_list * pg_handle;
 		pg_handle=page_new_ext(NULL,p_doc->doc->type,p_doc->doc);
@@ -1339,20 +1327,17 @@ static int cmd_modulo(page_list_head * p_doc, param params[], cmd_page_list_head
 		}
 		pages_list_add_page(p_doc,pg_handle,pg_add_end);
 	}
-	
+
 	new=pages_list_new(p_doc,0);
 	pages_count=pages_count(p_doc);
-	if (half){
-		pages_count = pages_count/2;
-	}
-	for (i=0;i<pages_count;i+=modulo){
+
+	for (int i=0;i<pages_count;i+=modulo){
 		for (ranges=pages->next;ranges!=(cmd_page_list*)pages;ranges=ranges->next){
 			range=pages_list_new(p_doc,0);
 
 			if (ranges->range[0]==-1){
 				ranges->range[0]=modulo;
 			}
-
 			if (ranges->range[1]==-1){
 				ranges->range[1]=modulo;
 			}
@@ -1366,7 +1351,7 @@ static int cmd_modulo(page_list_head * p_doc, param params[], cmd_page_list_head
 				new_page=page_num_to_ptn(p_doc, -1*ranges->range[1]-i);
 				page_end=page_num_to_ptn(p_doc, -1*ranges->range[0]-i);
 			}
-			
+
 			if (new_page==NULL || page_end==NULL){
 				message(FATAL,"Wrong ranges %ld, %ld\n",ranges->range[0]+i,  -1*ranges->range[1]-i);
 				return -1;
@@ -1377,7 +1362,7 @@ static int cmd_modulo(page_list_head * p_doc, param params[], cmd_page_list_head
 				pages_list_add_page(range, page_new(new_page,0),pg_add_end);
 			}
 			pages_list_add_page(range, page_new(new_page,0),pg_add_end);
-			
+
 
 			if (cmd_exec_tree(range, &(ranges->commands), 0)==-1){
 				return -1;
@@ -1398,7 +1383,7 @@ static int cmd_apply(page_list_head * p_doc, param params[], cmd_page_list_head 
 	cmd_page_list * range;
 	cmd_page_list_head sorted_pages;
 	int count;
-	
+
 	if (cmd_sort_range(&sorted_pages,pages,pages_count(p_doc))==-1){
 		/*error during sorting*/
 		return -1;
@@ -1412,7 +1397,7 @@ static int cmd_apply(page_list_head * p_doc, param params[], cmd_page_list_head 
 
 		begin=page_num_to_ptn(p_doc, range->range[0]);
 		end=page_num_to_ptn(p_doc, range->range[1]+1);
-		
+
 		if (begin==NULL || end==NULL){
 			return -1;
 		}
@@ -1426,7 +1411,7 @@ static int cmd_apply(page_list_head * p_doc, param params[], cmd_page_list_head 
 		end->prev->next=end;
 		selected.next->prev=(page_list*)&selected;
 		selected.prev->next=(page_list*)&selected;
-	
+
 		if (cmd_exec_tree(&selected, &(range->commands), 0)==-1){
 			return -1;
 		}
@@ -1450,8 +1435,8 @@ static int cmd_new(page_list_head * p_doc, param params[], cmd_page_list_head * 
 		cmds=pages->next;
 	}
 	new_list=pages_list_new(p_doc,0);
-	pages_list_add_page(new_list,page_new_ext(NULL,p_doc->doc->type,p_doc->doc),pg_add_end);	
-	if (cmds->commands.next!=NULL){ 
+	pages_list_add_page(new_list,page_new_ext(NULL,p_doc->doc->type,p_doc->doc),pg_add_end);
+	if (cmds->commands.next!=NULL){
 		if (cmd_exec_tree(new_list, &(cmds->commands),0)==-1){
 			return -1;
 		}
@@ -1460,7 +1445,7 @@ static int cmd_new(page_list_head * p_doc, param params[], cmd_page_list_head * 
 	return 0;
 }
 static int cmd_del(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
-	pages_list_empty(p_doc);	
+	pages_list_empty(p_doc);
 	return 0;
 }
 
@@ -1544,7 +1529,7 @@ static int cmd_paper2(page_list_head * p_doc, param params[], cmd_page_list_head
 	return 0;
 }
 static int cmd_orient(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
-	orientation orient  = DOC_O_UNKNOWN; 
+	orientation orient  = DOC_O_UNKNOWN;
 	if (strcmp(params[0].str,"landscape")==0){
 		orient = DOC_O_LANDSCAPE;
 		goto next_or;
@@ -1561,7 +1546,7 @@ static int cmd_orient(page_list_head * p_doc, param params[], cmd_page_list_head
 		orient = DOC_O_UPSIDE_DOWN;
 	}
 	next_or:
-	set_paper_orient(p_doc,orient);	
+	set_paper_orient(p_doc,orient);
 	return 0;
 }
 static int cmd_nup(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
@@ -1586,7 +1571,7 @@ static int cmd_nup(page_list_head * p_doc, param params[], cmd_page_list_head * 
 			return -1;
 		}
 	}
-	
+
 	rotate=params[5].int_number;
 	order_bbox=params[6].int_number;
 	if (params[7].str==NULL){
@@ -1606,7 +1591,7 @@ static int cmd_nup(page_list_head * p_doc, param params[], cmd_page_list_head * 
 			return -1;
 		}
 	}
-	
+
 	return pages_nup(p_doc,x,y,&bbox,dx,dy,orient,rotate,order_bbox,frame, center, scale);
 }
 
@@ -1650,11 +1635,11 @@ static int cmd_move(page_list_head * p_doc, param params[], cmd_page_list_head *
 	pages_move_xy(p_doc,params[0].real_number,params[1].real_number);
 	return 0;
 }
+
 static int cmd_duplex(page_list_head * p_doc, param params[], cmd_page_list_head * pages){
-	char cmds[] = " modulo(2,0){ 1 2 rotate(180) }"; 
+	char cmds[] = " modulo(2){ 1 2 rotate(180) }";
 	MYFILE * f;
 	cmd_ent_struct_head cmd_ent;
-/*TODO: add api to vdoc for working with duplex*/
 	f = stropen(cmds);
 	assert(cmd_preexec(&cmd_ent, f)==0);
 	assert(cmd_exec(p_doc, &cmd_ent, f)==0);
@@ -1677,7 +1662,7 @@ static int cmd_matrix(page_list_head * p_doc, param params[], cmd_page_list_head
 }
 
 static int cmd_spaper(page_list_head * p_doc, param params[], cmd_page_list_head * pages) {
-	doc_set_pformat_dimensions(params[0].str, params[1].real_number, params[2].real_number);	
+	doc_set_pformat_dimensions(params[0].str, params[1].real_number, params[2].real_number);
 	return 0;
 }
 

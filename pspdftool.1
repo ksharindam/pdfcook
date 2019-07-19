@@ -5,9 +5,9 @@ pspdftool -  tool for prepress preparation of PDF and PostScript documents
 .SH SYNOPSIS
 .B pspdftool
 [
-.B \-f \fIfilename\fR
+.B \-h
 ] [
-.B \-h\fIhelp\fR
+.B \-f \fIfilename\fR
 ]
 [
 .I commands
@@ -97,9 +97,29 @@ Select pages to save
 
 .TP
 .B modulo
-.I (pages, half, round){page_ranges}
+.I (step, round){page_ranges}
 
-Special type of select pages
+Special type of select pages.
+.br
+This command iterate pages by given step.
+.br
+such as if step=4, index are 0, 4, 8, 12 ...
+.br
+if command is modulo(4){1 2 3} then chosen pages are,
+.br
+for index 0 -> 4*0+1, 4*0+2, 4*0+3 = 1, 2, 3
+.br
+for index 1 -> 5, 6, 7
+.br
+thus page numbers will be in 1,2,3,5,6,7,9,10,11.. order
+.br
+if command is modulo(4){-1}, selected pages are
+.br
+-(4*0+1), -(4*1+1), -(4*2+1), -(4*3+1) ...
+.br
+= -1, -5, -9, -13, ...
+.br
+round option adds extra blank pages to make total page count multiple of round
 
 .TP
 .B book
@@ -129,7 +149,7 @@ Delete pages (use inside apply command)
 .RE
 Command for pages' content transform:
 .RS
-.TP 12
+.TP 10
 .B matrix
 .I (a,b,c,d,e,f)
 
@@ -211,8 +231,8 @@ Set text orientation the page landscape|portrait
 .B nup
 .I (x, y, dx, dy, orient, rotate, by_bbox, paper, frame, center)
 
-If is set only x to some value n, then command puts n pages to one paper.
-If is set x and y, then command puts x*y pages to one paper. X means number of columns and y means number of rows.
+Puts x pages to one paper, when only value of x is set.
+If both x and y are set, then command puts x*y pages to one paper. x means number of columns and y means number of rows.
 Paper is name of final paper size (e.g. a4,letter ...). Rotate will rotate each page before fitting.
 
 .TP
@@ -272,8 +292,9 @@ Display help message and exit
 Read commands from file
 
 .SH EXAMPLE
-This section contains some sample re-arrangements. To put two pages on one
-sheet (of A4 paper):
+This section contains some sample re-arrangements.
+.sp
+To put two pages on one sheet (of A4 paper):
 .sp
 .ce
 .B nup(2, paper=a4)
@@ -306,9 +327,9 @@ Delete last page from document
 Reverse pages in document
 .sp
 .ce
-.B modulo(2){-1}
+.B modulo(1){-1}
 .sp
-Select even pages form document
+Select even pages from document
 .sp
 .ce
 .B modulo(2){2}
@@ -319,6 +340,7 @@ Fit page to a4
 .B scaleto(a4)
 .SH AUTHORS
 Ales Snuparek <snuparek@atlas.cz>
+.br
 Arindam Chaudhuri <ksharindam@gmail.com>
 .SH TRADEMARKS
 .B PostScript
