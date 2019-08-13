@@ -57,19 +57,19 @@ static dimensions_ent _doc_page_sizes[]= {
    { "isob6",  {354,  499 }},
    { "b6",     {354,  499 }},	/* 12.5cm * 17.6cm */
    { "jisb0", {2920, 4127 }}, /* 103.0cm * 145.6cm */
-   { "jisb1", {2064, 2920 }},	/* 72.8cm * 103.0cm */ 
-   { "jisb2", {1460, 2064 }},	/* 51.5cm * 72.8cm */  
-   { "jisb3", {1032, 1460 }},	/* 36.4cm * 51.5cm */  
-   { "jisb4",  {729, 1032 }},	/* 25.7cm * 36.4cm */  
-   { "jisb5",  {516,  729 }},	/* 18.2cm * 25.7cm */  
-   { "jisb6",  {363,  516 }},	/* 12.8cm * 18.2cm */  
-   { "c0", {2599, 3677 }},	/* 91.7cm * 129.7cm */  
-   { "c1", {1837, 2599 }},	/* 64.8cm * 91.7cm */  
-   { "c2", {1298, 1837 }},	/* 45.8cm * 64.8cm */  
-   { "c3",  {918, 1298 }},	/* 32.4cm * 45.8cm */  
-   { "c4",  {649, 918 }},		/* 22.9cm * 32.4cm */  
-   { "c5",  {459, 649 }},		/* 16.2cm * 22.9cm */  
-   { "c6",  {323, 459 }},		/* 11.4cm * 16.2cm */  
+   { "jisb1", {2064, 2920 }},	/* 72.8cm * 103.0cm */
+   { "jisb2", {1460, 2064 }},	/* 51.5cm * 72.8cm */
+   { "jisb3", {1032, 1460 }},	/* 36.4cm * 51.5cm */
+   { "jisb4",  {729, 1032 }},	/* 25.7cm * 36.4cm */
+   { "jisb5",  {516,  729 }},	/* 18.2cm * 25.7cm */
+   { "jisb6",  {363,  516 }},	/* 12.8cm * 18.2cm */
+   { "c0", {2599, 3677 }},	/* 91.7cm * 129.7cm */
+   { "c1", {1837, 2599 }},	/* 64.8cm * 91.7cm */
+   { "c2", {1298, 1837 }},	/* 45.8cm * 64.8cm */
+   { "c3",  {918, 1298 }},	/* 32.4cm * 45.8cm */
+   { "c4",  {649, 918 }},		/* 22.9cm * 32.4cm */
+   { "c5",  {459, 649 }},		/* 16.2cm * 22.9cm */
+   { "c6",  {323, 459 }},		/* 11.4cm * 16.2cm */
    { "A0", {2382, 3369 }},    /* 84cm * 118.8cm */
    { "A1", {1684, 2382 }},    /* 59.4cm * 84cm */
    { "A2", {1191, 1684 }},    /* 42cm * 59.4cm */
@@ -77,23 +77,23 @@ static dimensions_ent _doc_page_sizes[]= {
    { "A4", {595, 842 }},		/* 21cm * 29.7cm */
    { "A5", { 421,  595 }},     /* 14.85cm * 21cm */
    { "A6",  {297,  420 }},	/* 10.5cm * 14.85 cm */
-   { "A7",  {210,  297 }},	/* 7.4cm * 10.5cm */   
-   { "A8",  {148,  210 }},	/* 5.2cm * 7.4cm */    
-   { "A9",  {105,  148 }},	/* 3.7cm * 5.2cm */    
-   { "A10",  {73,  105 }},	/* 2.6cm * 3.7cm */    
+   { "A7",  {210,  297 }},	/* 7.4cm * 10.5cm */
+   { "A8",  {148,  210 }},	/* 5.2cm * 7.4cm */
+   { "A9",  {105,  148 }},	/* 3.7cm * 5.2cm */
+   { "A10",  {73,  105 }},	/* 2.6cm * 3.7cm */
    { "ISOB0", {2835, 4008 }},
    { "B0",    {2835, 4008 }},	/* 100cm * 141.4cm */
-   { "ISOB1", {2004, 2835 }},	                     
-   { "B1",    {2004, 2835 }},	/* 70.7cm * 100cm */ 
-   { "ISOB2", {1417, 2004 }},	                     
-   { "B2",    {1417, 2004 }},	/* 50cm * 70.7cm */  
-   { "ISOB3", {1001, 1417 }},	                     
-   { "B3",    {1001, 1417 }},	/* 35.3cm * 50cm */  
-   { "ISOB4",  {709, 1001 }},	                     
-   { "B4",     {709, 1001 }},	/* 25cm * 35.3cm */  
-   { "ISOB5",  {499,  709 }},	                     
-   { "B5",     {499,  709 }},	/* 17.6cm * 25cm */  
-   { "ISOB6",  {354,  499 }},	                     
+   { "ISOB1", {2004, 2835 }},
+   { "B1",    {2004, 2835 }},	/* 70.7cm * 100cm */
+   { "ISOB2", {1417, 2004 }},
+   { "B2",    {1417, 2004 }},	/* 50cm * 70.7cm */
+   { "ISOB3", {1001, 1417 }},
+   { "B3",    {1001, 1417 }},	/* 35.3cm * 50cm */
+   { "ISOB4",  {709, 1001 }},
+   { "B4",     {709, 1001 }},	/* 25cm * 35.3cm */
+   { "ISOB5",  {499,  709 }},
+   { "B5",     {499,  709 }},	/* 17.6cm * 25cm */
+   { "ISOB6",  {354,  499 }},
    { "B6",     {354,  499 }},	/* 12.5cm * 17.6cm */
    { "JISB0", {2920, 4127 }},	/* 103.0cm * 145.6cm */
    { "JISB1", {2064, 2920 }},	/* 72.8cm * 103.0cm */
@@ -220,7 +220,7 @@ page_list_head * doc_open(const char * name){
 	if (sep!=NULL){
 		strncpy(ext_str,sep+1,DOC_EXT_LEN);
 		ext_str[DOC_EXT_LEN-1]=0;
-		strtoupper(ext_str);	
+		strtoupper(ext_str);
 		for (i=1;i<func_implement_array.size;i++){
 			if (strcmp(ext_str,func_implement_array.functions[i].ext_str)==0){
 				start=i;
@@ -228,7 +228,7 @@ page_list_head * doc_open(const char * name){
 			}
 		}
 	}
-	
+
 	/*pro kazdy podporovany format zkusit nacist soubor*/
 	p_doc=pages_list_new(NULL, 0);
 	assert(p_doc!=NULL);
@@ -264,7 +264,7 @@ doc_handle *doc_handle_new(doc_handle *d_handle, int type){
 	doc_handle * pom=NULL;
 	assert(d_handle==NULL || is_doc_handle(d_handle));
 	if (is_doc_handle(d_handle)){
-		d_handle->ref+=1;	
+		d_handle->ref+=1;
 		pom=d_handle;
 	}else
 	{
@@ -291,7 +291,7 @@ doc_handle *doc_handle_new(doc_handle *d_handle, int type){
 	}
 	return pom;
 }
- 
+
 doc_handle * doc_handle_copy_w(doc_handle * d_handle){
 	doc_handle * pom;
 	assert(is_doc_handle(d_handle));
@@ -316,9 +316,9 @@ int doc_handle_delete(doc_handle * d_handle){
 		 callfunc(doc_structure_delete,d_handle)(d_handle->doc);
 		 free(d_handle);
 	 }
-	return 0;	
+	return 0;
  }
-	 
+
 int doc_handle_convert_format(page_list_head * h1, page_list_head * h2){
 	if (h1->doc->type==0 || h2->doc->type==0){
 		return 0;
@@ -326,9 +326,9 @@ int doc_handle_convert_format(page_list_head * h1, page_list_head * h2){
 	if (h1->doc->type==h2->doc->type){
 		return 0;
 	}
-	if ((h2->doc->type<func_implement_array.size) 
+	if ((h2->doc->type<func_implement_array.size)
 	&& (h2->doc->type>0)){
-		return callfunc(doc_convert,h1->doc)(h2,func_implement_array.functions[h2->doc->type].ext_str); 
+		return callfunc(doc_convert,h1->doc)(h2,func_implement_array.functions[h2->doc->type].ext_str);
 	}
 	return -1;
 }
@@ -340,7 +340,7 @@ int doc_handle_merge(doc_handle * h1,doc_handle * h2){
 		h1->doc=callfunc(doc_structure_new,h2)(h2->doc);
 		h1->type=h2->type;
 	}
-	
+
 	/*assert(doc_convert_format(h1,h2)==0);*/
 	if (h2->type==0 && h1->type!=0){
 		h2->doc=callfunc(doc_structure_new,h1)(h1->doc);
@@ -409,7 +409,7 @@ page_handle * new_page_handle(page_handle * p1){
 	if (pom==NULL){
 	  message(FATAL,"malloc() error");
 	}
-	
+
 #if 0
 	printf("NPH $%p\n",pom);
 #endif
@@ -460,7 +460,7 @@ page_handle * page_handle_copy_w(page_handle * p_handle){
 		doc_handle_delete(p_handle->doc);
 		free(p_handle);
 	 }
-	return 0;	
+	return 0;
 }
 
 
@@ -469,7 +469,7 @@ int doc_close(page_list_head * p_doc){
 }
 
 int doc_save(page_list_head * p_doc, const char * name,void * extra_args){/*extra args, pro urcite formaty ...*/
-	doc_apply_page_transform(p_doc);	
+	doc_apply_page_transform(p_doc);
 	return callfunc(doc_save,p_doc->doc)(p_doc, name, extra_args);
 }
 
@@ -480,12 +480,12 @@ int pages_to_one(page_list_head *pglist){          /*spoji dve posobe jdouci str
 	page_list * next;
 	page_list * next_next;
 
-	doc_apply_page_transform(pglist);	
+	doc_apply_page_transform(pglist);
 
 	while(pages_count(pglist)>1){
 		next=page_next(page_begin(pglist));
 		next_next=page_next(next);
-		
+
 
 		next->page=page_handle_copy_w(next->page);
 		next_next->page=page_handle_copy_w(next_next->page);
@@ -547,38 +547,34 @@ int update_global_dimensions(page_list_head * p_doc){
 	page_list * page=page_next(page_begin(p_doc));
 	copy_dimensions(&dim_bbox,&page->page->bbox);
 	copy_dimensions(&dim_paper,&page->page->paper);
-#if 0
-	printf("<b>%d %d %d %d\n",dim_bbox.left.x,dim_bbox.left.y,dim_bbox.right.x,dim_bbox.right.y);
-#endif
-	
+
 	for (page=page_next(page);page!=page_end(p_doc);page=page_next(page)){
 		max_dimensions(&dim_bbox,&page->page->bbox);
 		max_dimensions(&dim_paper,&page->page->paper);
 	}
-#if 0
-	printf("<e>%d %d %d %d\n",dim_bbox.left.x,dim_bbox.left.y,dim_bbox.right.x,dim_bbox.right.y);
-	printf("<e>%d %d %d %d\n",dim_paper.left.x,dim_paper.left.y,dim_paper.right.x,dim_paper.right.y);
-#endif
 	copy_dimensions(&p_doc->doc->bbox,&dim_bbox);
 	copy_dimensions(&p_doc->doc->paper,&dim_paper);
 	return 0;
 }
 
+/*  transforms page according to given matrix
+    also transform page paper size and bounding box */
 int doc_page_transform(page_list * pg_handle, transform_matrix * matrix){      /*transformace stranky pomoci transformacni matice*/
 	pg_handle->page=page_handle_copy_w(pg_handle->page);
-	/*printf("%d %d %d %d\n",pg_handle->page->bbox.left.x,pg_handle->page->bbox.left.y,pg_handle->page->bbox.right.x,pg_handle->page->bbox.right.y);*/
+
 	transform_dimensions(&pg_handle->page->bbox,matrix);
 	transform_dimensions(&pg_handle->page->paper,matrix);
-	
-	/*printf("%d %d %d %d\n",pg_handle->page->bbox.left.x,pg_handle->page->bbox.left.y,pg_handle->page->bbox.right.x,pg_handle->page->bbox.right.y);*/
+    // set bottom left coordinate to (0,0) preserving the page width and height
+    pg_handle->page->paper.right.x -= pg_handle->page->paper.left.x;
+    pg_handle->page->paper.right.y -= pg_handle->page->paper.left.y;
+    pg_handle->page->paper.left.x = 0;
+    pg_handle->page->paper.left.y = 0;
+
 	max_dimensions(&pg_handle->page->doc->bbox,&pg_handle->page->bbox);
 	max_dimensions(&pg_handle->page->doc->paper,&pg_handle->page->paper);
 
 	transform_matrix_multi(&(pg_handle->page->matrix),matrix);
-/*
-	transform_matrix_multi(matrix,&(pg_handle->page->matrix));
-	memcpy(&(pg_handle->page->matrix),matrix,sizeof(transform_matrix));*/
-	
+
 	return  1;
 }
 
@@ -610,7 +606,7 @@ static void doc_init_pformat_dimensions(void) {
 	if (doc_page_sizes == NULL) {
 		doc_page_sizes_len = sizeof(_doc_page_sizes) / sizeof(dimensions_ent);
 		doc_page_sizes_end = doc_page_sizes_len -2;
-		doc_page_sizes  = (dimensions_ent *)  malloc(doc_page_sizes_len * sizeof(dimensions));	
+		doc_page_sizes  = (dimensions_ent *)  malloc(doc_page_sizes_len * sizeof(dimensions));
 		if (doc_page_sizes == NULL) {
 			message(FATAL, "malloc :: fail ()");
 		}
@@ -671,7 +667,7 @@ int doc_get_pformat_dimensions(int p_size,dimensions * dim){  /*vrati rozmery fo
 }
 
 /*metrika pro vypocet nejvhodnejsiho rozmeru do stranky*/
-#define doc_pformat_quality(x,y,fx,fy) ((x<=fx && y<=fy)? (fx-x) + (fy-y):-1)	
+#define doc_pformat_quality(x,y,fx,fy) ((x<=fx && y<=fy)? (fx-x) + (fy-y):-1)
 
 char * dimensions_str(int i){
 	doc_init_pformat_dimensions();
@@ -719,7 +715,7 @@ int doc_get_pformat_name(dimensions * dim){ /*vrati podle rozmeru format papiru 
 				format=i;
 				kvalita=kvalita_tmp;
 			}
-			
+
 		}
 	}
 	if (kvalita<0){
@@ -732,7 +728,7 @@ int doc_get_pformat_name(dimensions * dim){ /*vrati podle rozmeru format papiru 
 	else{
 		return format;
 	}
-  
+
 }
 
 transform_matrix * transform_matrix_new(transform_matrix * old){
@@ -759,7 +755,7 @@ transform_matrix * transform_matrix_multi(transform_matrix * a, transform_matrix
 		for(j=0;j<3;++j){
 			(*a)[i][j]=0;
 			for (k=0;k<3;++k){
-				(*a)[i][j]+=b[i][k]*(*c)[k][j];	
+				(*a)[i][j]+=b[i][k]*(*c)[k][j];
 			}
 		}
 	}
@@ -794,7 +790,7 @@ transform_matrix *transform_matrix_rotate(transform_matrix * what, double angle_
 	matrix[0][0]=cos((M_PI*angle_deg)/180.0); matrix[0][1]=-sin((M_PI*angle_deg)/180.0);
 	matrix[1][0]=sin((M_PI*angle_deg)/180.0); matrix[1][1]=cos((M_PI*angle_deg)/180.0);
 							 matrix[0][2]=0;
-							 matrix[1][2]=0; 	
+							 matrix[1][2]=0;
         matrix[2][0]=0; matrix[2][1]=0; matrix[2][2]=1;
 
 	transform_matrix_multi(&matrix,what);
@@ -805,8 +801,8 @@ transform_matrix *transform_matrix_rotate(transform_matrix * what, double angle_
 void transform_matrix_point(coordinate * point,transform_matrix * matrix){
 	double x=point->x;
 	double y=point->y;
-	point->x=x*(*matrix)[0][0] + y*(*matrix)[1][0] + (*matrix)[2][0]; 
-	point->y=x*(*matrix)[0][1] + y*(*matrix)[1][1] + (*matrix)[2][1]; 
+	point->x=x*(*matrix)[0][0] + y*(*matrix)[1][0] + (*matrix)[2][0];
+	point->y=x*(*matrix)[0][1] + y*(*matrix)[1][1] + (*matrix)[2][1];
 }
 /*mozna to slo napsat lepe!!!*/
 void transform_dimensions(dimensions * dim, transform_matrix * matrix){
@@ -822,10 +818,10 @@ void transform_dimensions(dimensions * dim, transform_matrix * matrix){
 	p4.x=dim->left.x;
 	p4.y=dim->right.y;
 
-	transform_matrix_point(&p1,matrix);	
-	transform_matrix_point(&p2,matrix);	
-	transform_matrix_point(&p3,matrix);	
-	transform_matrix_point(&p4,matrix);	
+	transform_matrix_point(&p1,matrix);
+	transform_matrix_point(&p2,matrix);
+	transform_matrix_point(&p3,matrix);
+	transform_matrix_point(&p4,matrix);
 
 	max.x=p1.x;
 	max.x=max(p2.x,max.x);
@@ -847,13 +843,6 @@ void transform_dimensions(dimensions * dim, transform_matrix * matrix){
 	min.y=min(min.y,p3.y);
 	min.y=min(min.y,p4.y);
 
-    // bottom-left corner of the page must be (0,0)
-    max.x = max.x - min.x;
-    max.y = max.y - min.y;
-    min.x = 0;
-    min.y = 0;
 	copy_coordinate(&(dim->right), &max);
 	copy_coordinate(&(dim->left), &min);
 }
-
-

@@ -7,7 +7,7 @@ page_list_head * pages_list_new(const page_list_head * from, int type){
 	page_list_head * pom=(page_list_head *)malloc(sizeof(page_list_head));
 	if (pom==NULL){
 		assert(0);
-		vdoc_errno=VDOC_ERR_LIBC;	
+		vdoc_errno=VDOC_ERR_LIBC;
 		return pom;
 	}
 	pom->id=M_ID_DOC_PAGE_LIST_HEAD;;
@@ -17,7 +17,7 @@ page_list_head * pages_list_new(const page_list_head * from, int type){
 		pom->doc=doc_handle_new(from->doc,type);
 		pom->doc=doc_handle_copy_w(pom->doc);
 		pages_count(pom)=0;
-	}	
+	}
 	else{
 		pom->doc=doc_handle_new(NULL,type);
 
@@ -86,8 +86,8 @@ void max_dimensions(dimensions * d1, dimensions *d2){
 		return;
 	}
 
-	max_coordinates(&(d1->right),&(d2->right));		
-	min_coordinates(&(d1->left),&(d2->left));		
+	max_coordinates(&(d1->right),&(d2->right));
+	min_coordinates(&(d1->left),&(d2->left));
 }
 
 void update_page_info(doc_handle * doc, page_handle * page){
@@ -138,7 +138,7 @@ void pages_list_insert_page(page_list_head * where, page_list * what, page_list 
 	if (isdimzero(what->page->bbox)){
 		copy_dimensions(&what->page->bbox,&where->doc->bbox);
 	}
-	
+
 	if (isdimzero(where->doc->paper)){
 		copy_dimensions(&where->doc->paper,&what->page->paper);
 	}
@@ -150,7 +150,7 @@ void pages_list_insert_page(page_list_head * where, page_list * what, page_list 
 	if (isdimzero(what->page->paper)){
 			copy_dimensions(&what->page->paper,&what->page->bbox);
 		}
-		
+
 	if (isdimzero(what->page->bbox)){
 		copy_dimensions(&what->page->bbox,&what->page->paper);
 	}
@@ -166,7 +166,7 @@ void pages_list_insert_page(page_list_head * where, page_list * what, page_list 
 		doc_handle_delete(what->page->doc);
 	}
 	what->page->doc=doc_handle_new(where->doc,0);
-	
+
 	listinsert(what,behide);
 	pages_count(where)+=1;
 	update_page_info(where->doc,what->page);
@@ -177,7 +177,7 @@ page_list * page_num_to_ptn(page_list_head * plist, int number){
 	page_list * start;
 	int i;
 	assert(is_page_list_head(plist));
-	
+
 	number=(number<0)?(plist->doc->pages_count+1+number):number;
 
 	if (number == pages_count(plist) + 1){
@@ -222,7 +222,7 @@ int pages_list_cat(page_list_head * l1, page_list_head * l2){
 		pom->page->doc=doc_handle_new(l1->doc,0);
 		update_page_info(l1->doc,pom->page);
 	}
-	
+
 	pages_count(l1)+=pages_count(l2);
 	listcat(page_list,l1,l2);
 	doc_handle_delete(l2->doc);
@@ -230,12 +230,12 @@ int pages_list_cat(page_list_head * l1, page_list_head * l2){
 	return 0;
 }
 
-/*vytvori novou stranku, pokud handle ukazuje na platnou stranku, vytvori kopii*/ 
+/*vytvori novou stranku, pokud handle ukazuje na platnou stranku, vytvori kopii*/
 page_list * page_new_ext(page_list * from, int doc_type, doc_handle * doc){
 	page_list * pom;
 	pom=(page_list *) malloc(sizeof(page_list));
 	if (pom==NULL){
-		vdoc_errno=VDOC_ERR_LIBC;	
+		vdoc_errno=VDOC_ERR_LIBC;
 		message(FATAL,"malloc() error");
 		assert(0);
 		return pom;
@@ -252,7 +252,7 @@ page_list * page_new_ext(page_list * from, int doc_type, doc_handle * doc){
 		}
 		else{
 			return pom;
-		}	
+		}
 	}
 }
 page_list * page_new(page_list * from, int doc_type){

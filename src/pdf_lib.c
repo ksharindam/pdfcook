@@ -765,12 +765,7 @@ static int _getPdfPages(page_list_head * p_doc,MYFILE *f, int major, int minor){
 		if (pdf_get_boundaries(&new_page->page->bbox,pdf_get_dict_name_value(pobj,"TrimBox")) == -1){
 			if (pdf_get_boundaries(&new_page->page->bbox,pdf_get_dict_name_value(pobj,"BleedBox")) == -1){
 				if (pdf_get_boundaries(&new_page->page->bbox,pdf_get_dict_name_value(pobj,"CropBox"))==-1){
-					if (isdimzero(p_doc->doc->bbox)){
-						copy_dimensions(&new_page->page->bbox,&new_page->page->paper);
-					}
-					else{
-						copy_dimensions(&new_page->page->bbox,&p_doc->doc->bbox);
-					}
+                    copy_dimensions(&new_page->page->bbox,&new_page->page->paper);
 				}
 			}
 		}

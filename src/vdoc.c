@@ -6,13 +6,13 @@
 int pages_info(page_list_head * p_doc,FILE * f){
 	page_list * page;
 	fprintf(f,"Pages Info:\n\n");
-	for (page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
-		fprintf(f, "paper: %5d %5d %5d %5d\n", page->page->paper.left.x,  page->page->paper.left.y, page->page->paper.right.x, page->page->paper.right.y);
-		fprintf(f, "bbox:  %5d %5d %5d %5d\n", page->page->bbox.left.x,  page->page->bbox.left.y, page->page->bbox.right.x, page->page->bbox.right.y);
+	for (page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)) {
+		fprintf(f, "paper: %5d %5d %5d %5d      bbox: %5d %5d %5d %5d\n", page->page->paper.left.x,
+            page->page->paper.left.y, page->page->paper.right.x, page->page->paper.right.y,
+            page->page->bbox.left.x,  page->page->bbox.left.y, page->page->bbox.right.x, page->page->bbox.right.y);
 	}
 	fprintf(f, "\n");
 	return 0;
-
 }
 
 int pages_transform(page_list_head * p_doc, transform_matrix * matrix){
@@ -52,44 +52,45 @@ int set_paper_orient(page_list_head * p_doc, orientation orient){
 int pages_scaleto(page_list_head * p_doc, dimensions * _paper, double top, double right, double bottom, double left){
 	double scale, scale_x, scale_y;
 	double move_x,move_y;
-	double new_w, new_h, page_w, page_h;
+	double old_page_w, old_page_h, avail_w, avail_h;
 	dimensions paper;
 
 	copy_dimensions(&paper,_paper);
-	paper.right.x-=right;
-	paper.right.y-=top;
-	paper.left.x+=left;
-	paper.left.y+=bottom;
-    // available width inside margin
-	new_w = paper.right.x - paper.left.x;
-	new_h = paper.right.y - paper.left.y;
+	paper.right.x -= right;
+	paper.right.y -= top;
+	paper.left.x  += left;
+	paper.left.y  += bottom;
+    // available width and height inside margin
+	avail_w = paper.right.x - paper.left.x;
+	avail_h = paper.right.y - paper.left.y;
 
 	page_list * page;
 	for (page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
-        // bounding box size
-        page_w = page->page->bbox.right.x - page->page->bbox.left.x;
-        page_h = page->page->bbox.right.y - page->page->bbox.left.y;
+        // using paper size instead of bounding box size, because viewers show paper
+        // size as page size, and you dont see the bounding box rect in a viewer
+        old_page_w = page->page->paper.right.x - page->page->paper.left.x;
+        old_page_h = page->page->paper.right.y - page->page->paper.left.y;
         // get scale value to fit inside margin of new page
-        scale_x = new_w / page_w;
-        scale_y = new_h / page_h;
+        scale_x = avail_w / old_page_w;
+        scale_y = avail_h / old_page_h;
         scale = min(scale_x, scale_y);
         // adjust for new margin
         move_x =  paper.left.x;
         move_y =  paper.left.y;
         // adjust to fit center
-        move_x +=  ((new_w - (scale * page_w)) / 2.0 );
-        move_y +=  ((new_h - (scale * page_h)) / 2.0 );
-        // adjust for old bounding box start position
-        // as the old page is scaled, bounding box is also scaled
-        move_x -= scale*page->page->bbox.left.x;
-        move_y -= scale*page->page->bbox.left.y;
+        move_x +=  ((avail_w - (scale * old_page_w)) / 2.0 );
+        move_y +=  ((avail_h - (scale * old_page_h)) / 2.0 );
+        // adjust in case, old paper bottom left is not (0,0)
+        // as the old page is scaled, dimension is also scaled
+        //move_x -= scale*page->page->paper.left.x;
+        //move_y -= scale*page->page->paper.left.y;
 
         transform_matrix  scale_matrix = {{1,0,0},{0,1,0},{0,0,1}};
-        transform_matrix_move_xy(&scale_matrix,move_x,move_y);
+        transform_matrix_move_xy(&scale_matrix, move_x, move_y);
         transform_matrix_scale(&scale_matrix,scale);
 
 		doc_page_transform(page,&scale_matrix);
-		copy_dimensions( &( page->page->paper),_paper);
+		copy_dimensions( &(page->page->paper), _paper);
 	}
 	update_global_dimensions(p_doc);
     return 0;
@@ -236,12 +237,12 @@ int draw_frame(page_list_head * p_doc, int x, int y, int width, int type, int st
 int pages_move_xy(page_list_head * p_doc, double x, double y){
 	transform_matrix  matrix = {{1,0,0},{0,1,0},{0,0,1}};
 	page_list * page;
+
 	transform_matrix_move_xy(&matrix,x,y);
 	for (page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
 		doc_page_transform(page,&matrix);
 	}
 	return 0;
-
 }
 
 int pages_nup(page_list_head * p_doc,int x,int y, dimensions * bbox,

@@ -35,8 +35,8 @@ static int mystring_add_char(mystring * s,char c){
 	s->str[s->cpoz]=0;
 	++(s->cpoz);
 	return 0;
-
 }
+
 long pdf_get_obj_poz(pdf_object_table * xref, pdf_object * p_obj){
 	if ( xref==NULL
 		|| p_obj==NULL
