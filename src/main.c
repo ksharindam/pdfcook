@@ -11,11 +11,12 @@
 #define STD_IN_OUT 		1
 
 struct conf {
-	int           infile;
-	int           outfile;
-	char           *commands;
-	char	       *f_cmd;
+	int    infile;
+	int    outfile;
+	char   *commands;
+	char   *f_cmd;
 };
+
 enum {
 	c_cmdexec,c_cmd_info
 };
@@ -45,7 +46,7 @@ static const struct option long_options[] = {
 #endif
 
 /* vypise parametry programu */
-static void 
+static void
 print_help(FILE * stream, int exit_code)
 {
 	size_t          i;
@@ -63,11 +64,11 @@ void sig_handler(int sig){
          printf("Memory violation.\n");
          exit( -100);
 }
-			 
+
 
 
 /* nacte vstupni parametry programu */
-static void 
+static void
 parseargs(int argc, char *argv[], struct conf * conf)
 {
 	int             next_option;
@@ -94,13 +95,13 @@ parseargs(int argc, char *argv[], struct conf * conf)
 		case 'v':
 			break;
 		case 'f':
-			
+
 			conf->f_cmd = optarg;
 			break;
 		}
 
 	} while (next_option != -1);
-	
+
 	switch(argc-optind){
 	case 3:
 		conf->commands = argv[optind];

@@ -19,3 +19,4 @@ The project has many bugs that I am trying to fix.
 * can use even and odd page set in apply command  
 * duplex mode is now working  
 * scaleto bug is fixed  
+* v0.5 : Added pdf 1.7 support (previous was supported upto 1.4)  

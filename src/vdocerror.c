@@ -1,111 +1,35 @@
 #include "vdocerror.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
 
 int vdoc_errno=0;
 
-#define MAX_MESSAGE	256	/* maximum formatted message length */
-#define MAX_FORMAT	16	/* maximum format length */
-#define MAX_COLUMN	78	/* maximum column to print upto */
+#define MAX_MSG_LEN	255	/* maximum formatted message length */
 
-static char program[]= "pspdftool";
-
-
-void message(int flags, char *format, ...)
+void message(int flags, const char *format, ...)
 {
-  va_list args ;
-  static int column = 0 ;	/* current screen column for message wrap */
-  char msgbuf[MAX_MESSAGE] ;	/* buffer in which to put the message */
-  char *bufptr = msgbuf ;	/* message buffer pointer */
-  msgbuf[0]=0;
-
-  if ( (flags & MESSAGE_NL) && column != 0 ) {	/* new line if not already */
-    putc('\n', stderr) ;
-    column = 0 ;
-  }
-    
-  if ( flags & MESSAGE_PROGRAM ) {
-    strncpy(bufptr, program,MAX_MESSAGE-1);
-    bufptr += strlen(program) ;
-    *bufptr++ = ':' ;
-    *bufptr++ = ' ' ;
-  }
-
-  va_start(args, format) ;
-  if ( format != NULL ) {
-    char c ;
-    while ( (c = *format++) != '\0' ) {
-      if (c == '%') {
-	int done, longform, index ;
-	char fmtbuf[MAX_FORMAT] ;
-	longform = index = 0 ;
-	fmtbuf[index++] = c ;
-	do {
-	  done = 1 ;
-	  fmtbuf[index++] = c = *format++ ;
-	  fmtbuf[index] = '\0' ;
-	  switch (c) {
-	  case '%':
-	    *bufptr++ = '%' ;
-	  case '\0':
-	    break ;
-	  case 'e': case 'E': case 'f': case 'g': case 'G':
-	    {
-	      double d = va_arg(args, double) ;
-	      snprintf(bufptr,MAX_MESSAGE - 1 - strlen(msgbuf), fmtbuf, d) ;
-	      bufptr += strlen(bufptr) ;
-	    }
-	    break ;
-	  case 'c': case 'd': case 'i': case 'o':
-	  case 'p': case 'u': case 'x': case 'X':
-	    if ( longform ) {
-	      long l = va_arg(args, long) ;
-	      snprintf(bufptr,MAX_MESSAGE - 1 - strlen(msgbuf), fmtbuf, l) ;
-	    } else {
-	      int i = va_arg(args, int) ;
-	      snprintf(bufptr,MAX_MESSAGE - 1 - strlen(msgbuf), fmtbuf, i) ;
-	    }
-	    bufptr += strlen(bufptr) ;
-	    break ;
-	  case 's':
-	    {
-	      char *s = va_arg(args, char *) ;
-	      snprintf(bufptr,MAX_MESSAGE - 1 - strlen(msgbuf), fmtbuf, s) ;
-	      bufptr += strlen(bufptr) ;
-	    }
-	    break ;
-	  case 'l':
-	    longform = 1 ;
-	    /* FALLTHRU */
-	  default:
-	    done = 0 ;
-	  }
-	} while ( !done ) ;
-      } else if ( c == '\n' ) {	/* write out message so far and reset column */
-	int len = bufptr - msgbuf ;	/* length of current message */
-	*bufptr++ = '\n' ;
-	*bufptr = '\0' ;
-	if ( column + len > MAX_COLUMN && column > 0 ) {
-	  putc('\n', stderr) ;
-	  column = 0 ;
-	}
-	fputs(bufptr = msgbuf, stderr) ;
-	column = 0 ;
-      } else
-	*bufptr++ = c ;
+    char msgbuf[MAX_MSG_LEN+1] = {};	/* buffer in which to put the message */
+    char *bufptr = msgbuf ;	/* message buffer pointer */
+    int pos = 0;
+    // should put newline if column is not 0 in terminal
+    if (flags==1) {
+        snprintf(bufptr, 11, "warning : ");
+        bufptr += 10;
+        pos += 10;
     }
-    *bufptr = '\0' ;
-    {
-      int len = bufptr - msgbuf ;	/* length of current message */
-      if ( column + len > MAX_COLUMN && column > 0 ) {
-	putc('\n', stderr) ;
-	column = 0 ;
-      }
-      fputs(msgbuf, stderr) ;
-      column += len ;
+    else if (flags==2) {
+        snprintf(bufptr, 9, "error : ");
+        bufptr += 8;
+        pos += 8;
     }
-    fflush(stderr) ;
-  }
-  va_end(args) ;
-
-  if ( flags & MESSAGE_EXIT )	/* don't return to program */
-    exit(1) ;
+    va_list args ;
+    va_start(args, format);
+    vsnprintf(bufptr, MAX_MSG_LEN-pos, format, args);
+    va_end(args);
+    // write the string to stdout or stderr
+    fwrite(msgbuf, strlen(msgbuf), 1, stderr);
+    if ( flags==2 )	// exit program after the FATAL msg
+        exit(1) ;
 }

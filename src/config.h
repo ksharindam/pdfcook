@@ -2,7 +2,7 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.4"
+#define PACKAGE_VERSION "0.5"
 
 /* Do we have ghostscript? */
 #define HAVE_GS 1
@@ -12,15 +12,6 @@
 
 /* Do we have zlib? */
 #define HAVE_ZLIB 1
-
-/* Define to empty if `const' does not conform to ANSI C. */
-/* #undef const */
-
-/* Define to rpl_malloc if the replacement function should be used. */
-/* #undef malloc */
-
-/* Define to rpl_realloc if the replacement function should be used. */
-/* #undef realloc */
 
 /* Define to the equivalent of the C99 'restrict' keyword, or to
    nothing if this is not supported.  Do not define if restrict is

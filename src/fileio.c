@@ -4,6 +4,8 @@
 #include "fileio.h"
 #include "vdocerror.h"
 
+#define BUFSIZE 16384
+
 #define crlf(x) (((x)=='\r') || ((x)=='\n'))
 
 char lend_str[4][3]={"\n","\r","\n","\r\n"};
@@ -31,9 +33,13 @@ int slow_mygetc(MYFILE * f)
 	return *(f->ptr)++;
 }/*slow_mmygetc()*/
 
-MYFILE * stropen(const char * str){
+MYFILE * stropen(const char *str){
+    size_t len = strlen(str);
+    return streamopen(str, len);
+}
+
+MYFILE * streamopen(const char *str, size_t len){
 	MYFILE * f;
-	size_t len;
 	if (str==NULL){
 		return NULL;
 	}
@@ -46,21 +52,19 @@ MYFILE * stropen(const char * str){
 	f->column = 0;
 	f->scratch = 0;
 	f->lastc = 0;
-	len=strlen(str);
 	f->buf=(unsigned char *)malloc(sizeof(unsigned char) * (len+1));
 	if (f->buf==NULL){
 		free(f);
 		vdoc_errno=VDOC_ERR_LIBC;
 		return NULL;
 	}
-	strcpy((char *)f->buf,str);
+    memcpy(f->buf, str, len+1);
 	f->pos=len;
 	f->f=NULL;
 	f->ptr=f->buf;
 	f->end=f->buf+len;
 	f->eof=-1;
 	return f;
-
 }
 
 MYFILE * myfopen(const char * filename,const char * mode)
@@ -114,7 +118,7 @@ long myfseek(MYFILE *stream,long offset,int origin)
 	if (stream->f==NULL){
 		switch (origin){
 			case SEEK_SET:
-				stream->ptr=stream->buf+offset+1;
+				stream->ptr=stream->buf+offset;
 			break;
 			case SEEK_END:
 				stream->ptr=stream->end-offset;
@@ -144,16 +148,15 @@ long myfseek(MYFILE *stream,long offset,int origin)
 }/*END myfseek()*/
 
 /*
- cte radek po radku soubor f, vraci pozici ukazovatka v souboru pred nactenim
- radku, konec souboru je indikovan navratovou hodnotou EOF (-1), nacte len-1 znaku,
- posledni je ukoncovaci 0
+ read line by line file f, returns the position of the pointer in the file before loading,
+ end of file is indicated by return value EOF (-1), load len-1 characters,
+ the last byte is 0 (null character)
  */
-long myfgets(char * line,int len,MYFILE * f,int * eoln)
+long myfgets(char *line, int len, MYFILE *f, int *eoln)
 {
 	long l = myftell(f);
 	int lend = UNDEF;
 	int llen;
-/*	char * pom=line;*/
 	--len;
 	llen=len-1;
 
@@ -162,13 +165,13 @@ long myfgets(char * line,int len,MYFILE * f,int * eoln)
 		*line=0;
 		return EOF;
 	}
-	/*nacteni radku*/
 	do
 	{
 		*line=mygetc(f);
-		--len;++line;
+		++line;--len;
 	}
 	while (len && !myfeof(f) &&  !crlf(*(line-1)));
+
 	if (llen==len && myfeof(f))
 	{
 		f->eof=EOF;
@@ -202,7 +205,6 @@ long myfgets(char * line,int len,MYFILE * f,int * eoln)
 		*eoln=lend;
 	}
 	*line=0;
-/*	printf("%ld %s\n",l, pom);*/
 	return l;
 } /*END myfgets()*/
 
@@ -305,7 +307,7 @@ size_t myfread(void * where, size_t size,size_t nmemb,MYFILE * stream){
        	str=(unsigned char *) where;
 	if (stream->f!=NULL){
 		if(myfseek(stream,poz,SEEK_SET)==-1){
-			message(FATAL,"seek erroro\n");
+			message(FATAL,"seek error\n");
 		}
 		read=fread(where,size,nmemb,stream->f);
 		if (read==nmemb){

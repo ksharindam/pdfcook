@@ -1,6 +1,7 @@
 #include "common.h"
 #include "fileio.h"
 #include "pdf_parser.h"
+#include "pdf_filters.h"
 
 typedef struct mystring{
 	char *str;
@@ -37,23 +38,8 @@ static int mystring_add_char(mystring * s,char c){
 	return 0;
 }
 
-long pdf_get_obj_poz(pdf_object_table * xref, pdf_object * p_obj){
-	if ( xref==NULL
-		|| p_obj==NULL
-		|| p_obj->type!=PDF_OBJ_INDIRECT_REF)
-	{
-		return -1;
-	}
-	if (xref->count<=p_obj->val.reference.major
-	    || xref->table[p_obj->val.reference.major].minor!=p_obj->val.reference.minor
-	    || xref->table[p_obj->val.reference.major].used!='n')
-	{
-		return -1;
-	}
-	return xref->table[p_obj->val.reference.major].offset;
-}
 
-
+// creates a MYFILE from given string and calls pdf_get_object()
 int pdf_get_object_from_str(pdf_object * obj, char * str){
 	MYFILE * f;
 	int retval;
@@ -66,7 +52,8 @@ int pdf_get_object_from_str(pdf_object * obj, char * str){
 	return retval;
 }
 
-int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_tok * last_tok){
+// to read an obj at particular pos, seek file in that pos and call this function
+int pdf_get_object(MYFILE *f, pdf_object *p_obj, pdf_object_table *xref, pdf_tok *last_tok){
 	pdf_tok tok;
 	long stream_len=0;
 	pdf_object t_obj;
@@ -109,13 +96,8 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 				return 0;
 			}
 			if (strcmp(last_tok->id,"obj")==0){
-				/*indircet object*/
 				p_obj->type=PDF_OBJ_INDIRECT;
 				p_obj->val.reference.obj=pdf_new_object();
-#if 0
-				printf("%lu\n",myftell(f));
-				fflush(f->f);
-#endif
 				if (pdf_get_object(f,p_obj->val.reference.obj,xref,last_tok)==-1){
 					message(FATAL, "pdf_read_object() error in file %s  at line  %d.\n",__FILE__,__LINE__);
 					return -1;
@@ -128,7 +110,6 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 			}
 
 			if (strcmp(last_tok->id,"R")==0){
-				/*indircet object reference*/
 				p_obj->type=PDF_OBJ_INDIRECT_REF;
 				return 0;
 			}
@@ -156,17 +137,17 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 		case PDF_T_BDICT:
 			p_obj->val.dict.next=p_obj->val.dict.prev=(pdf_dict*)&(p_obj->val.dict);
 			p_obj->type=PDF_OBJ_DICT;
-			while (pdf_get_object(f,&t_obj,xref,last_tok)==0){
+			while (pdf_get_object(f,&t_obj,xref,last_tok)==0){ // get key
 				pom_dict=(pdf_dict *) malloc(sizeof(pdf_dict));
 				if (pom_dict==NULL){
 					return -1;
 				}
 				pom_dict->name=t_obj.val.name;
 				pom_obj=pdf_new_object();
-				if (pdf_get_object(f,pom_obj,xref,last_tok)==-1){
+				if (pdf_get_object(f,pom_obj,xref,last_tok)==-1){ // get value
 					free(pom_dict);
 					free(pom_obj);
-					message(FATAL,"in file %s at line %d pdf_get_object() fail\n",__FILE__,__LINE__);
+					message(FATAL,"Failed to get value of the key /%s\n",t_obj.val.name);
 					return -1;
 				}
 				pom_dict->obj=pom_obj;
@@ -176,35 +157,20 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 						case PDF_OBJ_INT:
 							stream_len=pom_obj->val.int_number;
 							break;
-						case PDF_OBJ_INDIRECT_REF:
-							{
-							pdf_object plobj;
-							long pos;
-							pos=myftell(f);
-							if (myfseek(f,pdf_get_obj_poz(xref, pom_obj),SEEK_SET)){
-								message(FATAL,"myfseek()  error\n");
-								return -1;
-							}
-							if (pdf_get_object(f,&plobj,xref,NULL)==-1){
-								message(FATAL,"in file %s at line %d pdf_get_object() fail\n",__FILE__,__LINE__);
-								return -1;
-							}
-							if (plobj.type!=PDF_OBJ_INDIRECT
-							    || plobj.val.reference.major!=pom_obj->val.reference.major
-							    || plobj.val.reference.minor!=pom_obj->val.reference.minor
-							    || plobj.val.reference.obj->type!=PDF_OBJ_INT){
-								message(FATAL, "in file %s at line %d, length can be only int or indirctt object.\n",__FILE__,__LINE__);
-								return -1;
-							}
-							if (myfseek(f,pos,SEEK_SET)){
-								message(FATAL,"myfseek()  error\n");
-								return -1;
-							}
-							stream_len=plobj.val.reference.obj->val.int_number;
-							pdf_delete_object(&plobj);
-						}
-							break;
+                        case PDF_OBJ_INDIRECT_REF:
+                            fpos = myftell(f);
+                            pdf_read_object(f, pom_obj->val.reference.major, xref);
+                            pdf_object *ref_obj = xref->table[pom_obj->val.reference.major].obj;
+                            if (ref_obj->type==PDF_OBJ_INT) {
+                                stream_len = ref_obj->val.int_number;
+                            }
+                            else {
+                                message(FATAL, "Stream length is not int\n");
+                            }
+                            myfseek(f, fpos, SEEK_SET);
+                            break;
 						default:
+                            message(WARN, "Can't read stream length of type %d\n", pom_obj->type);
 							return -1;
 					}
 				}
@@ -247,7 +213,7 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 				if (stream_len){
 					p_obj->val.stream.stream=(char *)malloc(sizeof(char) * stream_len);
 					if (p_obj->val.stream.stream==NULL){
-						message(FATAL,"maloc() error\n");
+						message(FATAL,"malloc() error\n");
 					}
 					if (myfread(p_obj->val.stream.stream,sizeof(char),stream_len,f)!=stream_len){
 						message(FATAL,"fread() error\n");
@@ -256,7 +222,7 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 				else {
 					p_obj->val.stream.stream=(char *)malloc(sizeof(char) * 1);
 					if (p_obj->val.stream.stream==NULL){
-						message(FATAL,"maloc() error\n");
+						message(FATAL,"malloc() error\n");
 					}
 				}
 				if (pdf_get_tok(f,last_tok)!=0
@@ -301,7 +267,8 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 				p_obj->val.boolean=0;
 				return 0;
 			}
-			message(FATAL,"unknown id \"%s\"\n",last_tok->id);
+			message(WARN,"unknown id \"%s\"\n",last_tok->id);
+            return -1;   // PDF_OBJ_UNKNOWN
 			/*identifikator*/
 		case PDF_T_EOLN:
 		case PDF_T_BOOL:
@@ -317,6 +284,81 @@ int pdf_get_object(MYFILE * f, pdf_object * p_obj, pdf_object_table * xref, pdf_
 		}
 	}
 	return -1;
+}
+
+// take obj no. and get and indirect object using xref table
+int pdf_read_object(MYFILE *f, int major, pdf_object_table *xref) {
+    if (xref->table[major].obj != NULL) return 0;// already read
+    // read object if nonfree object
+    if (xref->table[major].type==1) {
+        pdf_object obj;
+        long offset = xref->table[major].offset;
+        if (myfseek(f, offset, SEEK_SET)){
+            message(WARN,"myfseek()  error, pos %ld\n", offset);
+            return -1;
+        }
+        if (pdf_get_object(f, &obj,xref,NULL)==-1){
+            message(WARN,"pdf_get_object() failed: obj no %d\n", major);
+            xref->table[major].obj = pdf_new_object();
+            xref->table[major].obj->type = PDF_OBJ_NULL;
+            return -1;
+        }
+        if (obj.type!=PDF_OBJ_INDIRECT){
+            message(WARN, "Object %d isn't indirect\n", major);
+            xref->table[major].obj = pdf_new_object();
+            xref->table[major].obj->type = PDF_OBJ_NULL;
+            pdf_delete_object(&obj);
+            return -1;
+        }
+        if (obj.val.reference.major!=major || obj.val.reference.minor!=xref->table[major].minor){
+            message(WARN, "Major or minor number in object are mismatched.\n");
+        }
+        xref->table[major].obj = obj.val.reference.obj;
+        // decompress if it is compressed object stream
+        if (xref->table[major].obj->type==PDF_OBJ_STREAM) {
+            pdf_object *dict = xref->table[major].obj->val.stream.dict;
+            pdf_object *type = pdf_get_dict_name_value(dict, "Type");
+            if (type!=NULL && type->type==PDF_OBJ_NAME && strcmp(type->val.name, "ObjStm")==0){
+                decompress_stream_object(xref->table[major].obj);
+            }
+        }
+    }
+    // read object if compressed nonfree object
+    else if (xref->table[major].type==2) {
+        int obj_stm_no = xref->table[major].obj_stm;
+        pdf_read_object(f, obj_stm_no, xref);
+        pdf_object *obj_stm = xref->table[obj_stm_no].obj;
+        /*if (obj_stm->type != PDF_OBJ_STREAM) {
+            message(WARN, "source obj stream for obj %d is null\n", major);
+            xref->table[major].obj = pdf_new_object();
+            xref->table[major].obj->type = PDF_OBJ_NULL;
+            return -1;
+        }*/
+        int first = pdf_get_dict_name_value(obj_stm->val.stream.dict,"First")->val.int_number;
+        int n = pdf_get_dict_name_value(obj_stm->val.stream.dict,"N")->val.int_number;
+        // open stream as file, parse and get all objects inside it
+        MYFILE *file = streamopen(obj_stm->val.stream.stream, obj_stm->val.stream.len);
+        pdf_tok tok;
+        for (int i=0; i<n; i++) {
+            pdf_get_tok(file, &tok);
+            int obj_no = tok.int_number;
+            pdf_get_tok(file, &tok);
+            int offset = first + tok.int_number;
+            if (xref->table[obj_no].obj_stm != obj_stm_no)
+                continue;   // this obj is not referenced in xref table, so skip
+            long last_seek = myftell(file);
+            myfseek(file, offset, SEEK_SET);
+            pdf_object *new_obj = pdf_new_object();
+            if (pdf_get_object(file, new_obj,xref,NULL)==-1){
+                message(WARN,"pdf_get_object() failed : obj no %d\n",obj_no);
+                new_obj->type = PDF_OBJ_NULL;
+            }
+            xref->table[obj_no].obj = new_obj;
+            myfseek(file, last_seek, SEEK_SET);
+        }
+        myfclose(file);
+    }
+    return 0;
 }
 
 int pdf_free_tok(pdf_tok * p_tok){
@@ -454,26 +496,26 @@ whend:
 			if ((c=mygetc(f))=='<'){
 					p_tok->type=PDF_T_BDICT;
 					return 0;
-				}
-				else{
-					p_tok->str.type=PDF_STR_HEX;
-					mystring_new(&mstr);
-					/*hexadecimalni string*/
-					while (c!=EOF &&c!='>'){
-						mystring_add_char(&mstr,c);
-						c=mygetc(f);
+            }
+            else{
+                p_tok->str.type=PDF_STR_HEX;
+                mystring_new(&mstr);
+                /*hexadecimal string*/
+                while (c!=EOF &&c!='>'){
+                    mystring_add_char(&mstr,c);
+                    c=mygetc(f);
 
-					}
-					if (c=='>'){
-						p_tok->type=PDF_T_STR;
-						p_tok->str.str=mstr.str;
-						return 0;
-					}
-					else{
-						p_tok->type=PDF_T_UNKNOWN;
-						return -1;
-					}
-				}
+                }
+                if (c=='>'){
+                    p_tok->type=PDF_T_STR;
+                    p_tok->str.str=mstr.str;
+                    return 0;
+                }
+                else{
+                    p_tok->type=PDF_T_UNKNOWN;
+                    return -1;
+                }
+            }
 
 			break;
 		case '>': /*end dictionary*/
@@ -603,7 +645,8 @@ out235:
 	return 0;
 }
 
-pdf_object * pdf_add_dict_name_value(pdf_object * p_obj, char *  name){
+// p_obj is the dictionary. the val of the key 'name' is returned.
+pdf_object * pdf_add_dict_name_value(pdf_object *p_obj, char *name){
 	pdf_object * pom;
 	pdf_dict * pom_dict;
 	if (p_obj->type!=PDF_OBJ_DICT){
@@ -813,9 +856,6 @@ int pdf_count_size_object (pdf_object * p_obj){
 
 
 int pdf_delete_object (pdf_object * p_obj){
-#if 0
-	printf("PDO: %p %d\n",p_obj,p_obj->type);
-#endif
 	switch(p_obj->type){
 		 case PDF_OBJ_BOOL:
 			 return 0;
@@ -878,9 +918,6 @@ int pdf_delete_object (pdf_object * p_obj){
 pdf_object * pdf_new_object(void){
 	pdf_object * pom;
 	pom=(pdf_object *)malloc(sizeof(pdf_object));
-#if 0
-	printf("PNO: %p\n",pom);
-#endif
 	if (pom==NULL){
 		message(FATAL,"malloc()\n");
 		return NULL;

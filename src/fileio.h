@@ -1,15 +1,15 @@
 #ifndef _fileio_h
-
 #define _fileio_h
 
 #include "stdio.h"
-/*#include "pdftype.h"*/
 
-#define BUFSIZE 16384 /*velikost bufferu pro IO operace*/
-	
+// returns current seek position
 #define myftell(f) ((f->pos)-((f->end) - (f->ptr)))
+// returns true if seek pos is at the end
 #define myfeof(f) (f->eof==EOF && (f->ptr==f->end))
+// returns the current char and seek 1 byte forward
 #define mygetc(f) ((f->ptr < f->end) ? *(f->ptr)++:slow_mygetc(f))
+// seek 1 byte backward
 #define myungetc(f) (f->ptr=((f->ptr)>(f->buf))?(f->ptr-1):(f->buf))
 
 
@@ -28,30 +28,13 @@ typedef struct myfile {
 	int row;
 	int lastc;
 	int scratch;
+} MYFILE;
 
-}MYFILE;
+MYFILE * myfopen(const char * filename,const char * mode);
 
-/**
- * funkce pro otevreni soubru nazvu filename, 
- * mode "r"/"w"
- * */
-MYFILE * myfopen(const char * filename,const char * mode); 
+int myfclose(MYFILE *stream);
 
-/**
- * funkce pro uzavreni souboru stream
- * */
-int myfclose(MYFILE *stream); 
-
-/**
- * funkce pro seekovani v souboru stream, o offset, 
- * origin stejne jako u fseek u stdio.h
- * */
-long myfseek(MYFILE *stream,long offset,int origin); 
-
-/**
- * nacte radek ze souboru f, vraci pozici v souboru pred prectenim radku,
- * pokud je parametr eoln ruzny od NULL, je mu nastavena hodnota konce radku
- * */
+long myfseek(MYFILE *stream,long offset,int origin);
 
 size_t myfsize(MYFILE * stream);
 
@@ -62,18 +45,11 @@ size_t myfwrite(void * where, size_t size,size_t nmemb,MYFILE * stream);
 long myfgets(char * string,int len,MYFILE * f,int * eoln);
 int slow_mygetc(MYFILE * f);
 
-/**
- * zapise na konec do souboru dst retezec co a doplni je 
- * dle konstanty prislusnym koncem radku dle lend
- * vraci 0 pri uspechu, pri neuspechu vraci EOF
- * */
-int swrite (FILE * dst,char * co,size_t delka,int lend); 
+int swrite (FILE * dst,char * co,size_t delka,int lend);
 
-/**
- * zapise vybrany blok ze souboru src na konec souboru dst
- * */
-int bwrite(FILE * src,FILE * dst,long poz,size_t len); 
+int bwrite(FILE * src,FILE * dst,long poz,size_t len);
 
-MYFILE * stropen(const char * str);
-	
+MYFILE * stropen(const char *str);
+MYFILE * streamopen(const char *str, size_t len);
+
 #endif
