@@ -1,4 +1,4 @@
-# pspdftool
+# pdfcook
 Preprinting preparation tool for PDF ebooks.  
 
 ### Build and Install
@@ -9,6 +9,8 @@ run
 make -j4  
 sudo make install  
 ```
+Install manpage  
+`sudo make installman`  
 
 This is a forked project of pspdftool by Ales Snuparek. Thanks to him for this wonderful project.  
 The project has many bugs that I am trying to fix.  
@@ -20,3 +22,4 @@ The project has many bugs that I am trying to fix.
 * duplex mode is now working  
 * scaleto bug is fixed  
 * v0.5 : Added pdf 1.7 support (previous was supported upto 1.4)  
+* v0.6 : removed PostScript support  

@@ -6,7 +6,7 @@
 int pdf_doc_open(page_list_head * p_doc, const char * filename){
 	return pdf_open(p_doc,filename);
 }
-int pdf_doc_save(page_list_head * p_doc, const char * name,void * extra_args){ 
+int pdf_doc_save(page_list_head * p_doc, const char * name,void * extra_args){
 	return pdf_save(p_doc, name);
 }
 
@@ -53,7 +53,7 @@ int pdf_doc_convert(page_list_head * p_doc, char * ext){
 	if (doc_save(p_doc,filein,NULL)==-1){
 		return -1;
 	}
-	
+
 	asprintf(&cmd,"ps2pdf %s %s", filein, fileout);
 	f=popen(cmd,"r");
 	free(cmd);
@@ -74,8 +74,8 @@ int pdf_doc_convert(page_list_head * p_doc, char * ext){
 	}
 #endif
 	return -1;
-
 }
+
 int pdf_doc_register_format( doc_function_implementation * reg ){
 	reg->doc_open=pdf_doc_open;
 	reg->doc_save=pdf_doc_save;

@@ -1,8 +1,10 @@
 #ifndef _PDFLIB_H_
 #define _PDFLIB_H_
 
+#include "page_list.h"
 #include "vldoc.h"
 #include "pdf_type.h"
+
 
 int pdf_open(page_list_head * p_doc,const char * name);
 

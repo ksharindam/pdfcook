@@ -40,10 +40,10 @@ typedef struct coordinate{
 }coordinate;
 
 /** \brief rozmery papiru, rozmery boundingboxu ...*/
- typedef struct dimensions{
-	 coordinate right; /**<horni levy roh*/
-	 coordinate left; /**<dolni pravy roh*/
- }dimensions;
+typedef struct dimensions{
+	 coordinate right; /* top right */
+	 coordinate left; /* bottom left*/
+} dimensions;
 
 
 /** \brief handle na virtualni dokument*/
@@ -64,10 +64,10 @@ typedef struct doc_handle {
 typedef struct page_handle {
 	int id; /**<id_struktury, pro runtime typovou kontrolu???*/
 	int ref; /**< pocet odkazu na dokument*/
-	int type;  /**<typ stranky PS, PDF ...*/
-	dimensions bbox; /**<rozmery b_boxu stranky*/
-	dimensions paper; /**<rozmery papiru*/
-	orientation orient; /**<orientace obsahu stranky*/
+	int type;  /* PDF or anything else ...*/
+	dimensions bbox; // page contents bounding box
+	dimensions paper; //media size
+	orientation orient; // portrait or landscape
 	int number; /**<cislo stranky*/
 	char name[PATH_MAX];/**<nazev stranky*/
 	void * page; /**<ukazatel na stukturu stranky stranku*/

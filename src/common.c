@@ -82,4 +82,12 @@ int asprintf(char **strp, const char *fmt, ...){
 }
 #endif
 
-void _debug(char *c, ...) {}
+void debug(char *format, ...)
+{
+#ifdef DEBUG
+    va_list args ;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+#endif
+}

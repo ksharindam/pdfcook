@@ -12,7 +12,6 @@
 #include <assert.h>
 #include <math.h>
 #include <unistd.h>
-#include "ps_lib.h"
 #include "pdf_lib.h"
 
 #ifdef MALOC_CHECK
@@ -22,7 +21,7 @@ extern size_t __count;
 
 #ifndef HAVE_ASPRINTF
 	int asprintf(char **strp, const char *fmt, ...);
- #endif
+#endif
 
 /*format, ktery bude zvolen v pripade neplatne koncovky*/
 #define starts(s1,s2)	(strncmp(s1,s2,strlen(s2)) == 0)
@@ -38,15 +37,9 @@ char * skipwhspaces(char * s);
 char * strtoupper(char * s);
 char * strlower(char * s);
 
-#ifdef DEBUG
-#define debug printf
-#else
-#define debug _debug
-#endif
-void _debug(char *, ...);
-/**
-	\brief Funkce prevede string na ID dle vstupniho pole \a from
-*/
 int strint(char * what,char * from[]);
+
+// print message only when DEBUG is defined
+void debug(char *format, ...);
 
 #endif

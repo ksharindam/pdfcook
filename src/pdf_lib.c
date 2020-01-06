@@ -437,9 +437,10 @@ int getPdfHead(page_list_head * p_doc,MYFILE * f,char * line){
 	char * pom;
 	pdf_doc_handle * p_pdf = (pdf_doc_handle *) p_doc->doc->doc;
 
-	while (((i=myfgets(line,LLEN,f,NULL))!=EOF) && (!starts(line,"%PDF-")) && !starts(line,"%!PS-"));
-	if (i!=EOF && !starts(line,"%!PS-"))
+	while (((i=myfgets(line,LLEN,f,NULL))!=EOF) && (!starts(line,"%PDF-")));
+	if (i!=EOF)
 	{
+        // get pdf version
 		p_pdf->v_major=strtol(line+5,&pom,10);
 		if (*pom=='.'){
 			pom=pom+1;

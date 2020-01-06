@@ -2,7 +2,7 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.5"
+#define PACKAGE_VERSION "0.6"
 
 /* Do we have ghostscript? */
 #define HAVE_GS 1

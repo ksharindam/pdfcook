@@ -7,7 +7,6 @@
 #include "cmdexec.h"
 #include "common.h"
 #include "pdf_lib.h"
-#include "ps_lib.h"
 #include "fileio.h"
 #include "magic.h"
 

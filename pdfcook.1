@@ -1,9 +1,9 @@
-.TH pspdftool 1 "2019-01-30"
+.TH pdfcook 1 "2020-01-06"
 .SH NAME
-pspdftool -  tool for prepress preparation of PDF and PostScript documents
+pdfcook - tool for prepress preparation of PDF documents
 
 .SH SYNOPSIS
-.B pspdftool
+.B pdfcook
 [
 .B \-h
 ] [
@@ -20,13 +20,10 @@ pspdftool -  tool for prepress preparation of PDF and PostScript documents
 
 
 .SH DESCRIPTION
-.I pspdftool
-rearranges pages from a supported document, creating a new file.
-Supported documents are PostScript and PDF.
-The input PostScript file should follow the Adobe Document Structuring
-Conventions.
+.I pdfcook
+rearranges pages from a PDF document, creating a new file.
 
-.I pspdftool
+.I pdfcook
 can be used to perform a large number of arbitrary re-arrangements of
 Documents, including arranging for printing 2-up, 4-up, booklets, reversing,
 selecting front or back sides of documents, scaling, etc.
@@ -36,7 +33,7 @@ follow the syntax:
 .RS
 .TP 12
 .I commands
-.I = command ... command
+.I = command1 command2 ...
 .TP
 .I command
 .I = name(arg,name=arg2 ...){page selection}
@@ -343,14 +340,7 @@ Ales Snuparek <snuparek@atlas.cz>
 .br
 Arindam Chaudhuri <ksharindam@gmail.com>
 .SH TRADEMARKS
-.B PostScript
-and
 .B PDF
-are  trademarks of Adobe Systems Incorporated.
-
-.SH BUGS
-.I Pdftool
-does not accept all types of PDF and PostScript files.
-Cannot cut two or more PostScript files together.
+is trademark of Adobe Systems Incorporated.
 
 

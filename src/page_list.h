@@ -1,11 +1,11 @@
+#ifndef _PAGE_LIST_H_
+#define _PAGE_LIST_H_
 /**
  * \file page_list.h
  * Workshop library with a list of pages.
  * Individual pages are kept in the linked list.
  * The list of my head doc_page_list_head and all its elements are doc_page_list.
  * */
-#ifndef _PAGE_LIST_H_
-#define _PAGE_LIST_H_
 #include "doc_type.h"
 
 /**\brief zacatek seznamu*/
@@ -19,15 +19,15 @@
 /**\brief pocet stranek v seznamu*/
 #define pages_count(pg) (pg->doc->pages_count)
 /** \brief zkopiruje souradnice z \a b do \a a*/
-#define copy_coordinate(a,b) memcpy((a),(b),sizeof(struct coordinate)) 
+#define copy_coordinate(a,b) memcpy((a),(b),sizeof(struct coordinate))
 /** \brief vynuluje souradnice*/
 #define zero_coordinate(a) memset((a),0,sizeof(struct coordinate))
 /** \brief zkopiruje rozmery z \a b do \a a*/
-#define copy_dimensions(a,b) memcpy((a),(b),sizeof(struct dimensions)) 
+#define copy_dimensions(a,b) memcpy((a),(b),sizeof(struct dimensions))
 /** \brief vynuluje souradnice*/
 #define zero_dimensions(a) memset((a),0,sizeof(struct dimensions))
 /** \brief zkopiruje transformacni matici z \a b do \a a*/
-#define copy_matrix(a,b) memcpy((a),(b),sizeof(transform_matrix)) 
+#define copy_matrix(a,b) memcpy((a),(b),sizeof(transform_matrix))
 
 
 /**
@@ -53,9 +53,10 @@ typedef struct page_list_head{
 /**
  * \brief zpusob pridani stranky do seznamu
  * */
-typedef enum {	pg_add_begin, /**< pridat stranku na zacatek seznamu */ 
-		pg_add_end /**< pridat stranku na konec seznamu */
-	     }pg_add_mode;
+typedef enum {
+    pg_add_begin, /**< pridat stranku na zacatek seznamu */
+    pg_add_end /**< pridat stranku na konec seznamu */
+}pg_add_mode;
 
 /**
  * \brief  vytvori kopii seznamu stranek ze souboru \a name.
@@ -92,13 +93,13 @@ page_list_head * pages_list_new(const page_list_head * from, int type);
 page_list_head * pages_list_copy(const page_list_head * from);
 
 /**
- * \brief  odstrani seznam stranek z pameti. 
+ * \brief  odstrani seznam stranek z pameti.
  * \param which ukazatel na mazany seznam stranek
  * */
 void pages_list_delete(page_list_head * which);
 
 /**
- * \brief  zkrati zeznam na nulovou delku. 
+ * \brief  zkrati zeznam na nulovou delku.
  * \param which ukazatel na mazany seznam stranek
  * */
 void pages_list_empty(page_list_head * which);

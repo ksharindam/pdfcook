@@ -27,7 +27,7 @@ void dummy_doc_page_delete(void *pg_handle){
 	vdoc_errno=0;
 }
 void * dummy_doc_structure_new(void * structure){
-	
+
 	return (void *) 1;
 }
 void  dummy_doc_structure_delete(void *structure){
@@ -61,17 +61,13 @@ int dummy_doc_bbox_update(page_list_head * p_doc){
 			if (sscanf(in + 14,"%d %d %d %d",&dim.left.x, &dim.left.y, &dim.right.x, &dim.right.y)!=4){
 				message(FATAL, "Wrong BBox format.\n");
 			}
-#if 0
-			printf ("%d %d %d %d\n",dim.left.x, dim.left.y, dim.right.x, dim.right.y);
-#endif
+			//printf ("%d %d %d %d\n",dim.left.x, dim.left.y, dim.right.x, dim.right.y);
 			if (page!=page_begin(p_doc)){
 				/*copy_dimensions(&page->page->paper,&dim);*/
 				copy_dimensions(&page->page->bbox,&dim);
 				/*if is bbox bigger than page, upgrade it*/
 				max_dimensions(&page->page->paper, &page->page->bbox);
-#if 0
-				printf ("%d %d %d %d\n",page->page->bbox.left.x, page->page->bbox.left.y, page->page->bbox.right.x, page->page->bbox.right.y);
-#endif
+				//printf ("%d %d %d %d\n",page->page->bbox.left.x, page->page->bbox.left.y, page->page->bbox.right.x, page->page->bbox.right.y);
 				page=page_next(page);
 				if (i){
 					printf(" ");
@@ -82,10 +78,8 @@ int dummy_doc_bbox_update(page_list_head * p_doc){
 			}
 			printf("[%d]",i+1);
 			fflush(stdout);
-#if 0
-			printf("%d %d %d %d\n",dim.left.x, dim.left.y, dim.right.x, dim.right.y);
-			fflush(stdout);
-#endif
+			//printf("%d %d %d %d\n",dim.left.x, dim.left.y, dim.right.x, dim.right.y);
+			//fflush(stdout);
 			++i;
 		}
 	}

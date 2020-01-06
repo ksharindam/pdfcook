@@ -14,17 +14,16 @@
 /*
  * vdoc.h (virtual document higher implementation)
  * vldoc.h (virtual lower implementation document)
- * psdoc.h (postscript implementation)
  * pdfdoc.h (pdf implementation)
- * cmdexec.h (command interpreter) 
+ * cmdexec.h (command interpreter)
  */
 
-/**the maximum length of the file end*/
-#define DOC_EXT_LEN 4 
+/**the maximum length of the file extension*/
+#define DOC_EXT_LEN 4
 
-extern char *  doc_p_order_str[];
+extern char * doc_p_order_str[];
 extern char * doc_p_orientation_str[];
- 
+
 /**
  *\brief a structure containing implementation-dependent functions on a format
  */
@@ -33,12 +32,12 @@ typedef struct doc_function_implementation {
 	int (*doc_save)(page_list_head * p_doc, const char * name, void * extra_args);
 	int (*doc_close)(page_list_head * doc);
 	int (*doc_convert)(page_list_head * p_doc, char * ext);/*the page trimming feature*/
-	void * (*doc_structure_new)(void *structure);/*copies the document structure*/
+	void* (*doc_structure_new)(void *structure);/*copies the document structure*/
 	void (*doc_structure_delete)(void *structure);
 	int (*doc_structure_merge)(void * s1, void * s2);/*combines two document structures*/
-	
+
 	int (*update_bbox)(page_list_head * doc);
-	void * (*page_new)(const void *, void *);/*feature to create a copy of the page*/
+	void* (*page_new)(const void *, void *);/*feature to create a copy of the page*/
 	void (*page_delete)(void *);
 	int (*page_merge)(page_handle * p1, page_handle * p2);/*link a list of pages to one*/
 	int (*draw_line)(page_handle * handle, const coordinate * begin, const coordinate * end, int width);
@@ -47,6 +46,12 @@ typedef struct doc_function_implementation {
 	int (*page_crop)(page_handle * handle, dimensions * dimensions);
 	char ext_str[DOC_EXT_LEN]; /**<standardni koncovka dokumentu pro danny format*/
 }doc_function_implementation;
+
+typedef struct  doc_function_implementation_array{
+	doc_function_implementation *functions; /* pointer to array of doc_function_implementation*/
+	int size; /* the size of the previous field */
+	size_t a_size; /* memory allocated for a_size number of elements */
+}doc_function_implementation_array;
 
 /* "LowLevel implementace"*/
 
@@ -59,11 +64,7 @@ int doc_register_format(int (*reg_function)(doc_function_implementation *));
 void doc_free_format(void);
 /* operace s celym dokumentem*/
 
-/** \brief Use the name file to create a list of pages.
- * \param name jmeno souboru
- * \retval ukazatel na seznam stranek
- * \retval NULL pri nacitani souboru nastal problem
- */
+// brief Use the name file to create a list of pages.
 page_list_head * doc_open(const char * name);
 /* ulozeni seznamu stranek do souboru */
 /** \brief Funkce pro ulozeni seznamu stranek \a p_doc do souboru \a name.
@@ -126,7 +127,7 @@ int doc_draw_to_page_text(page_list* handle, const coordinate * where,  const ch
 /**
  * \brief Funkce provede libovolne transformace se strankou
  * \param handle ukazatel na stranku
- * \param matrix transformacni matice 
+ * \param matrix transformacni matice
  * \retval 0 vse v poradku
  * \retval -1 nastal problem
  * */
@@ -155,15 +156,4 @@ int doc_get_pformat_dimensions(int p_size, dimensions *);  /*vrati rozmery forma
 int doc_get_pformat_name(dimensions * dimensions); /*vrati podle rozmeru format papiru (ten nejtesnejsi)*/
 char * dimensions_str(int i);
 void doc_get_pformat_name_to_dimensions(char * name, dimensions *dim);
-/** \brief Funkce vrati typ dokumentu.
-   \param doc ukazatel na dokument
-   \retval typ dokumentu
- */
-typedef struct  doc_function_implementation_array{
-	doc_function_implementation * functions; /**<ukazatel na pole struktur funkci pro jednotlive implementace*/
-	int size; /**<velikost predchoziho pole */
-	size_t a_size; /**<velikost naalokovane pameti pro pole*/
-}doc_function_implementation_array;
-
-/*fce pro praci s transformacni matici*/
 #endif

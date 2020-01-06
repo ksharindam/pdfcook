@@ -1,12 +1,12 @@
-SOURCES = cmdexec.c fileio.c page_list.c pdf_lib.c ps_lib.c vldoc.c common.c main.c\
-    pdf_doc.c pdf_parser.c vdoc.c dummydoc.c pdf_filters.c ps_doc.c vdocerror.c
+SOURCES = cmdexec.c fileio.c page_list.c pdf_lib.c vldoc.c common.c main.c\
+    pdf_doc.c pdf_parser.c vdoc.c pdf_filters.c vdocerror.c dummydoc.c
 OBJS = $(SOURCES:.c=.o)
 CC = gcc
 CFLAGS = -Wall -O2 -fno-strict-aliasing
 INCLUDES =
 LIBS = -lm -lz
 
-pspdftool: ${OBJS}
+pdfcook: ${OBJS}
 	${CC} -s -o $@ ${OBJS} ${LIBS}
 
 clean:
@@ -16,13 +16,13 @@ clean:
 	${CC} ${CFLAGS} ${INCLUDES} -c $<
 
 install:
-	install pspdftool /usr/local/bin
+	install pdfcook /usr/local/bin
 
 uninstall:
-	rm /usr/local/bin/pspdftool
+	rm /usr/local/bin/pdfcook
 
 installman:
-	cp ../pspdftool.1 /usr/share/man/man1
+	cp ../pdfcook.1 /usr/share/man/man1
 
 removeman:
-	rm /usr/share/man/man1/pspdftool.1
+	rm /usr/share/man/man1/pdfcook.1

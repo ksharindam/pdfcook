@@ -3,7 +3,7 @@
 *.o
 
 # Compiled Binaries
-pspdftool
+pdfcook
 
 # test files
 test/

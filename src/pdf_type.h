@@ -1,14 +1,16 @@
 #ifndef _PDF_TYPE_H_
 #define _PDF_TYPE_H_
 
+#define LLEN 256
+
 typedef struct pdf_object pdf_object;
 
 typedef struct pdf_object_table_elm{
 	pdf_object *obj;
     int type;    // 0=free(f), 1=nonfree(n), 2=compressed
 	long offset; // type 1 only
-	int major;
-	int minor; // always 0 for type 2
+	int major;   // object no.
+	int minor; // gen id (always 0 for type 2)
     int obj_stm; // obj no. of object stream where obj is stored (for type 2)
     int index;   // index no. within the obj stream (for type 2)
 	int used;

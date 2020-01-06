@@ -1,7 +1,6 @@
 #include "common.h"
 #include "vldoc.h"
 #include "dummydoc.h"
-#include "ps_doc.h"
 #include "pdf_doc.h"
 #include "magic.h"
 #include <math.h>
@@ -9,7 +8,7 @@
 #ifndef M_PI
 	# define M_PI		3.14159265358979323846	/* pi */
 #endif
-/*v pripade ze neexistuje funkce, zavolat prislusnou dummy funkci*/
+/*if there is no function, call the appropriate dummy function*/
 #define callfunc(name,p_doc)							\
 	func_implement_array.functions[                                        \
 	     ( ((p_doc)->type < func_implement_array.size)                     \
@@ -29,7 +28,7 @@ typedef struct dimensions_ent{
 
 /* list of paper sizes supported */
 /* sizes are points (72 * sizes in inch=2.54cm) */
-/*static Paper papersizes[] = {*/
+
 static dimensions_ent _doc_page_sizes[]= {
    { "a0", {2382, 3369 }},    /* 84.1cm * 118.8cm */
    { "a1", {1684, 2382 }},    /* 59.4cm * 84.1cm */
@@ -139,13 +138,16 @@ static int doc_apply_page_transform(page_list_head * p_doc);
 char * doc_p_order_str[]={"Ascend","Descend","Special",0};
 char * doc_p_orientation_str[]={"Landscape","Portrait","Seascape","Upside-Down",0};
 
-/*"pevne" registrovane formaty*/
-static int (*doc_format_static[])(doc_function_implementation *) = {dummy_doc_register_format, ps_doc_register_format,pdf_doc_register_format};
+/*"fixed" registered formats*/
+static int (*doc_format_static[])(doc_function_implementation *) = {
+    dummy_doc_register_format,
+    pdf_doc_register_format
+};
 
-/*pole funci pro praci s jednotlivymi formaty*/
+/*function field for working with individual formats*/
 static doc_function_implementation_array func_implement_array={NULL,0,0};
 
-/*funkci se da jako odkaz funkce pro registraci danneho formatu*/
+/*function is given as function reference for registration of given format*/
 int doc_register_format(int (*reg_function)(doc_function_implementation *)){
 	doc_function_implementation * pom;
 	int ret_val;
@@ -409,10 +411,7 @@ page_handle * new_page_handle(page_handle * p1){
 	if (pom==NULL){
 	  message(FATAL,"malloc() error");
 	}
-
-#if 0
-	printf("NPH $%p\n",pom);
-#endif
+	//printf("NPH $%p\n",pom);
 	copy_page_handle(pom,p1);
 
 	return pom;
@@ -421,11 +420,7 @@ page_handle * new_page_handle(page_handle * p1){
 page_handle * page_handle_copy_w_ext(page_handle * p_handle, doc_handle * doc){
 	page_handle * pom;
 	assert(is_page_handle(p_handle));
-
-#if 0
-	printf("CPW %p %d \n",p_handle,p_handle->ref);
-#endif
-
+	//printf("CPW %p %d \n",p_handle,p_handle->ref);
 	if (p_handle->ref==1){
 		return p_handle;
 	}
@@ -445,9 +440,7 @@ page_handle * page_handle_copy_w(page_handle * p_handle){
 
  int  page_handle_delete(page_handle * p_handle){
 	assert(is_page_handle(p_handle));
-#if 0
-	printf("PHD %p %d \n",p_handle,p_handle->ref);
-#endif
+	//printf("PHD %p %d \n",p_handle,p_handle->ref);
 	if (p_handle->ref>1){
 		 p_handle->ref-=1;
 		 return 0;
@@ -637,9 +630,6 @@ void doc_set_pformat_dimensions(char * name, int x, int y) {
 			return;
 		}
 	}
-
-
-
 	if (doc_page_sizes_end +2 == doc_page_sizes_len) {
 		new_size = doc_page_sizes_len + 5;
 		new_arr = realloc (doc_page_sizes, new_size * sizeof(dimensions));
@@ -696,6 +686,7 @@ void doc_get_pformat_name_to_dimensions(char * name, dimensions *dim){
 	}
 	zero_dimensions(dim);
 }
+
 int doc_get_pformat_name(dimensions * dim){ /*vrati podle rozmeru format papiru (ten nejtesnejsi)*/
 	int kvalita, kvalita_tmp;
 	int i, format=-1;

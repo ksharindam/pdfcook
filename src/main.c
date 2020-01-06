@@ -1,3 +1,21 @@
+/*
+    pdfcook : A prepress preparation tool for PDF files
+    Copyright (C) 2020  Arindam Chaudhuri
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 #include "common.h"
 #ifdef HAVE_GETOPT_LONG
 #include <getopt.h>
@@ -22,7 +40,7 @@ enum {
 };
 
 char            pusage[][LLEN] = {
-	"Usage: pspdftool [<options>] -f<command>|<commands> <infile> ... <outfile>",
+	"Usage: pdfcook [<options>] -f<command>|<commands> <infile> ... <outfile>",
 	"  -h --help	Display this help screen",
 	"  -f --file    <command file>",
 /*	"  -q --quiet   Supress screen output",
@@ -50,7 +68,7 @@ static void
 print_help(FILE * stream, int exit_code)
 {
 	size_t          i;
-	fprintf(stream, "pspdftool %s\n", PACKAGE_VERSION);
+	fprintf(stream, "pdfcook %s\n", PACKAGE_VERSION);
 	for (i = 0; i < sizeof(pusage) / LLEN; ++i){
 		fprintf(stream, "%s\n", pusage[i]);
 	}
@@ -155,7 +173,7 @@ parseargs(int argc, char *argv[], struct conf * conf)
 		print_help(stderr, 1);
 		break;
 	}
-}				/* END parseargs() */
+}/* END parseargs() */
 
 int file_exist(const char * name){
 	FILE * f;
@@ -214,8 +232,6 @@ int main(int argc, char *argv[]){
 		}
 	}
 
-
-
 	if (conf.infile!=-1){
 		p_doc=pages_list_open((conf.infile==-2 || (argv[conf.infile][0]=='-'))?filein:argv[conf.infile]);
 	}
@@ -223,7 +239,7 @@ int main(int argc, char *argv[]){
 		p_doc=pages_list_open(NULL);
 	}
 	if (p_doc==NULL){
-		message(FATAL,"File \"%s\" is not PS, PDF format.\n",(conf.infile>0)?argv[conf.infile]:"stdin");
+		message(FATAL,"File \"%s\" is not PDF format.\n",(conf.infile>0)?argv[conf.infile]:"stdin");
 		/*soubor se nepodarilo nacist*/
 		return 1;
 	}
@@ -236,7 +252,7 @@ int main(int argc, char *argv[]){
 		}
 		p_doc_new=pages_list_open(argv[i]);
 		if (p_doc_new==NULL){
-			message(FATAL,"File \"%s\" is not PS, PDF format.\n",argv[i]);
+			message(FATAL,"File \"%s\" is not PDF format.\n",argv[i]);
 			return 1;
 		}
 		retval=pages_list_cat(p_doc,p_doc_new);
@@ -275,4 +291,4 @@ int main(int argc, char *argv[]){
 		remove(filein);
 	}
 	return 0;
-}				/* END main() */
+}/* END main() */
