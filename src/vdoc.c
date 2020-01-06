@@ -134,6 +134,7 @@ int pages_line(page_list_head * p_doc,int lx, int ly, int hx, int hy, int width)
 	}
 	return 0;
 }
+
 int pages_text(page_list_head * p_doc,int x, int y,char * text, char * font, int size){
 	page_list * page;
 	coordinate poz;
@@ -145,7 +146,8 @@ int pages_text(page_list_head * p_doc,int x, int y,char * text, char * font, int
 	}
 	return 0;
 }
-int pages_number(page_list_head * p_doc,int x, int y, int start,char * text, char * font, int size){
+
+int pages_number(page_list_head * p_doc,int x, int y, int start,char *text, char *font, int size){
 	page_list * page;
 	coordinate poz;
 	char _text[]="%d";
@@ -165,11 +167,9 @@ int pages_number(page_list_head * p_doc,int x, int y, int start,char * text, cha
 			return -1;
 		}
 	}
-
-    poz.x= (x!=-1)? x:(p_doc->doc->bbox.right.x-p_doc->doc->bbox.left.x)/2 + p_doc->doc->bbox.left.x;
-    poz.y= (y!=-1)? y:size+10;
-
 	for(page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
+        poz.x= (x!=-1)? x:(page->page->bbox.right.x-page->page->bbox.left.x)/2 + page->page->bbox.left.x;
+        poz.y= (y!=-1)? y: size+10;
 		asprintf(&out,text,start++);
         if (start>1)
 		    doc_draw_to_page_text(page,&poz,out,size,font);

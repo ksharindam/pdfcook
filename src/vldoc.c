@@ -529,11 +529,10 @@ static int doc_apply_page_transform(page_list_head * p_doc){
 	for (page=page_next(page);page!=page_end(p_doc);page=page_next(page)){
 		doc_page_transform_(page);
 	}
-
 	return 0;
-
 }
 
+// update bbox and paper size of doc to largest size among all pages
 int update_global_dimensions(page_list_head * p_doc){
 	dimensions dim_paper;
 	dimensions dim_bbox;
