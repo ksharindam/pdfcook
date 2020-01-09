@@ -856,6 +856,10 @@ int pdf_count_size_object (pdf_object * p_obj){
 
 
 int pdf_delete_object (pdf_object * p_obj){
+    if (p_obj==NULL) {
+        //message(WARN, "trying to delete null obj\n");
+        return -1;
+    }
 	switch(p_obj->type){
 		 case PDF_OBJ_BOOL:
 			 return 0;
@@ -910,7 +914,7 @@ int pdf_delete_object (pdf_object * p_obj){
 		 case PDF_OBJ_UNKNOWN:
 			 break;
 		 default:
-			 assert(0);
+             return -1;
 	}
 	return 0;
 }

@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <math.h>
 #include <unistd.h>
+#include <arpa/inet.h> // ntohl() function
 #include "pdf_lib.h"
 
 #ifdef MALOC_CHECK
@@ -38,6 +39,15 @@ char * strtoupper(char * s);
 char * strlower(char * s);
 
 int strint(char * what,char * from[]);
+// network byte order is big endian, eg. int 16 is stored as 0x000010 in 3 bytes
+inline int arr2int(char *arr, int len) {
+    char tmp[4] = {};
+    for (int i=0; i<len; i++) {
+        tmp[4-len+i] = arr[i];
+    }
+    return ntohl(*((int*)(&tmp[0])));
+}
+
 
 // print message only when DEBUG is defined
 void debug(char *format, ...);

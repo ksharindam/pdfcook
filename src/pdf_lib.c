@@ -3,7 +3,6 @@
 #include "pdf_parser.h"
 #include "fileio.h"
 #include "pdf_filters.h"
-#include <arpa/inet.h> // ntohl() function
 
 #define XREF_ENT_LEN 18
 #define PDF_TRAILER_OFFSET 64
@@ -98,20 +97,24 @@ int  object_table_copy(pdf_object_table * new,const pdf_object_table * obj){
 	}
 	return 0;
 }
-pdf_object_table * object_table_delete(pdf_object_table * obj){
-	int n;
-	pdf_object_table_elm * elm;
-	for (n=0;n<obj->count;++n){
 
-		elm=&(obj->table[n]);
-		if (elm->type==1){
-			pdf_delete_object(elm->obj);
-			free(elm->obj);
+pdf_object_table * object_table_delete(pdf_object_table * xref){
+	int n;
+	for (n=0;n<xref->count;++n){
+		if (xref->table[n].type) {
+            if (pdf_delete_object(xref->table[n].obj)==0) {
+                free(xref->table[n].obj);
+                xref->table[n].obj=NULL;
+            }
+            else
+                message(WARN, "could not delete obj : %d\n", n);
 		}
 	}
-	free(obj->table);
+	free(xref->table);
+    xref->table=NULL;
 	return 0;
 }
+
 int object_table_write(pdf_object_table * table,FILE * f){
 	int i;
 	fprintf(f,"xref\n%d %d\n",0,table->count);
@@ -167,7 +170,7 @@ void update_object(pdf_object * obj, pdf_object_table * table){
 
 // flag used=1 for used/referenced objects
 // flag 1 objects will not be deleted during write
-void dfs_object(pdf_object * obj, pdf_object_table * table){
+void dfs_object(pdf_object *obj, pdf_object_table * table){
 	switch (obj->type){
 		 case PDF_OBJ_BOOL:
 		 case PDF_OBJ_INT:
@@ -203,7 +206,11 @@ void dfs_object(pdf_object * obj, pdf_object_table * table){
 			 }
 			 TABLE_GET_ELM(table,obj->val.reference.major).used=1;
 			 if (TABLE_GET_ELM(table,obj->val.reference.major).obj==NULL){
-
+                 // in some bad pdfs even the object is free, the object is referenced
+                //message(WARN, "obj no %d is null obj\n", obj->val.reference.major);
+                TABLE_GET_ELM(table,obj->val.reference.major).obj = pdf_new_object();
+                TABLE_GET_ELM(table,obj->val.reference.major).obj->type = PDF_OBJ_NULL;
+                return;
 			}
 			 dfs_object(TABLE_GET_ELM(table,obj->val.reference.major).obj,table);
 			 return;
@@ -222,6 +229,7 @@ void update_page_ref(page_list_head * p_doc){
 	return;
 }
 
+// it gets called before dfs_object() in case of multiple pdfs
 void update_obj_ref(page_list_head * p_doc){
 	int i;
 	pdf_object_table * table = get_obj_table(p_doc);
@@ -246,11 +254,13 @@ int object_table_delete_unused(page_list_head * p_doc){
 	dfs_object(obj,table);      // flag used=1 for used objects
 	for (i=1,major=1;i<table->count;++i){
 		if (table->table[i].used){
+            table->table[i].type=1;
 			table->table[i].major=major;
+            //printf("%d %d\n", i, major);
 			++major;
 		}
 		else{
-			if (table->table[i].type!=0){
+			if (table->table[i].type!=0){ // not used but obj loaded in memory
 				table->table[i].type=0;
 				pdf_delete_object(table->table[i].obj);
 				free(table->table[i].obj);
@@ -266,7 +276,7 @@ int object_table_delete_unused(page_list_head * p_doc){
 	update_obj_ref(p_doc);
 	table->table[0].offset=0;
 	for (i=1,count=0;i<table->count;++i){
-		if (table->table[i].type==1){
+		if (table->table[i].used){
 			if (i!=table->table[i].major){
 				memcpy(&table->table[table->table[i].major],&table->table[i],sizeof(pdf_object_table_elm));
 			}
@@ -275,15 +285,6 @@ int object_table_delete_unused(page_list_head * p_doc){
 	}
 	table->count=count+1;
 	return 0;
-}
-
-// network byte order is big endian, eg. int 16 is stored as 0x000010 in 3 bytes
-inline int arr2int(char *arr, int len) {
-    char tmp[4] = {};
-    for (int i=0; i<len; i++) {
-        tmp[4-len+i] = arr[i];
-    }
-    return ntohl(*((int*)(&tmp[0])));
 }
 
 // from PDF 1.5 the xreftable can be a stream in an indirect object.
@@ -369,7 +370,7 @@ int pdf_xreftable_get(MYFILE *f, pdf_object_table *table, long xref_poz, char *l
     char c;
     do { c = mygetc(f); }
     while (isspace(c));
-    myungetc(f); //myfseek(f, myftell(f)-1, SEEK_SET);
+    myungetc(f);
 	if ((myfgets(line,LLEN,f,NULL))==EOF){
         return -1;
 	}
@@ -506,6 +507,7 @@ void pdf_page_delete(pdf_page_handle * page){
 		return;
 	}
 	free(page);
+    page=NULL;
 }
 
 
@@ -1046,7 +1048,6 @@ int pdf_save(page_list_head * p_doc, const char * filename){
 	pdf_write_object(get_pdf_handle(p_doc)->trailer,f);
 	fprintf(f,"\nstartxref\n%ld\n%%%%EOF\n",table_poz);
 	fclose(f);
-
 	if (p_pdf != NULL){
 		page_list * page;
 		int i;
@@ -1058,9 +1059,8 @@ int pdf_save(page_list_head * p_doc, const char * filename){
 			get_page_content(page)->minor=pages[i + pages_count(p_doc)];
 		}
 		free(pages);
-
+        pages=NULL;
 	}
-
 	return 0;
 }
 
@@ -1096,18 +1096,17 @@ int pdf_open(page_list_head * p_doc,const char * fname){
 	return 0;
 }/*END read_open()*/
 
-
+// insert structure 2 into structure 1
 int pdf_structure_merge(pdf_doc_handle * s1, pdf_doc_handle * s2){
 	int offset;
 	int i;
 	if (s1==s2){
 		return 0;
 	}
-
 	offset=s1->table.count;
 	object_table_realoc(&s1->table,s1->table.count+s2->table.count-1);
 	for (i=1;i<s2->table.count;++i){
-		s2->table.table[i].major=i+offset-1;
+		s2->table.table[i].major=offset+i-1;
 		s2->table.table[i].minor=0;
 	}
 	update_page_ref(s2->p_doc);
@@ -1115,7 +1114,7 @@ int pdf_structure_merge(pdf_doc_handle * s1, pdf_doc_handle * s2){
 
 	for (i=1;i<s2->table.count;++i){
 		memcpy(&s1->table.table[s2->table.table[i].major],&s2->table.table[i],sizeof(pdf_object_table_elm));
-		s2->table.table[i].obj=NULL;
+		s2->table.table[i].obj=NULL;// no need to free, as same object is pointed by s1
 		s2->table.table[i].type=0;
 	}
 	return 0;
@@ -1180,8 +1179,10 @@ void pdf_structure_delete(pdf_doc_handle * p_pdf){
 		pdf_delete_object(p_pdf->trailer);
 	}
 	free(p_pdf->trailer);
+    p_pdf->trailer=NULL;
 	object_table_delete(&p_pdf->table);
 	free(p_pdf);
+    p_pdf=NULL;
 	return;
 }
 
