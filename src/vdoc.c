@@ -82,8 +82,8 @@ int pages_scaleto(page_list_head * p_doc, dimensions * _paper, double top, doubl
         move_y +=  ((avail_h - (scale * old_page_h)) / 2.0 );
         // adjust in case, old paper bottom left is not (0,0)
         // as the old page is scaled, dimension is also scaled
-        //move_x -= scale*page->page->paper.left.x;
-        //move_y -= scale*page->page->paper.left.y;
+        move_x -= scale*page->page->paper.left.x;
+        move_y -= scale*page->page->paper.left.y;
 
         transform_matrix  scale_matrix = {{1,0,0},{0,1,0},{0,0,1}};
         transform_matrix_move_xy(&scale_matrix, move_x, move_y);
@@ -92,24 +92,24 @@ int pages_scaleto(page_list_head * p_doc, dimensions * _paper, double top, doubl
 		doc_page_transform(page,&scale_matrix);
 		copy_dimensions( &(page->page->paper), _paper);
 	}
-	update_global_dimensions(p_doc);
+	copy_dimensions(&p_doc->doc->paper, _paper);
     return 0;
 }
 
 int pages_rotate(page_list_head * p_doc, int angle){
     int x,y;
-	for(;angle<0;angle+=360);
+	angle %= 360;
 	page_list * page;
 	for (page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
 	    transform_matrix matrix = {{1,0,0},{0,1,0},{0,0,1}};
 	    x = page->page->paper.right.x;
 	    y = page->page->paper.right.y;
-	    switch (angle%360){
-		    case 180:
-			    transform_matrix_move_xy(&matrix,x,y);
-			    break;
+	    switch (angle){
 		    case 90:
 			    transform_matrix_move_xy(&matrix,0,x);
+			    break;
+		    case 180:
+			    transform_matrix_move_xy(&matrix,x,y);
 			    break;
 		    case 270:
 			    transform_matrix_move_xy(&matrix,y,0);
@@ -237,10 +237,13 @@ int draw_frame(page_list_head * p_doc, int x, int y, int width, int type, int st
 int pages_move_xy(page_list_head * p_doc, double x, double y){
 	transform_matrix  matrix = {{1,0,0},{0,1,0},{0,0,1}};
 	page_list * page;
+    dimensions paper;
 
 	transform_matrix_move_xy(&matrix,x,y);
 	for (page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
+        copy_dimensions(&paper, &page->page->paper);
 		doc_page_transform(page,&matrix);
+        copy_dimensions(&page->page->paper, &paper);
 	}
 	return 0;
 }

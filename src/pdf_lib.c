@@ -728,7 +728,8 @@ static int _getPdfPages(page_list_head *p_doc, MYFILE *f, int major, int minor){
 		pdf_get_boundaries(&p_doc->doc->paper,pdf_get_dict_name_value(pobj,"MediaBox"));
 		if (pdf_get_boundaries(&p_doc->doc->bbox,pdf_get_dict_name_value(pobj,"TrimBox")) == -1){
 			if (pdf_get_boundaries(&p_doc->doc->bbox,pdf_get_dict_name_value(pobj,"BleedBox")) == -1){
-				pdf_get_boundaries(&p_doc->doc->bbox,pdf_get_dict_name_value(pobj,"CropBox"));
+				if (pdf_get_boundaries(&p_doc->doc->bbox,pdf_get_dict_name_value(pobj,"CropBox"))==0)
+                    copy_dimensions(&p_doc->doc->paper,&p_doc->doc->bbox);
 			}
 		}
 
@@ -784,7 +785,8 @@ static int _getPdfPages(page_list_head *p_doc, MYFILE *f, int major, int minor){
 			if (pdf_get_boundaries(&new_page->page->bbox,pdf_get_dict_name_value(pobj,"BleedBox")) == -1){
 				if (pdf_get_boundaries(&new_page->page->bbox,pdf_get_dict_name_value(pobj,"CropBox"))==-1){
                     copy_dimensions(&new_page->page->bbox,&new_page->page->paper);
-				}
+				}// in a pdfviewer, the visible page size is the CropBox
+                else copy_dimensions(&new_page->page->paper, &new_page->page->bbox);
 			}
 		}
 
@@ -810,7 +812,7 @@ pdf_object * get_dict_name_value_type(pdf_object * obj,char * name,int type){
 	if (pom==NULL || pom->type!=type){
 		assert(0);
 
-		message(FATAL, "entry wasn't found or isn't requiered type\n");
+		message(FATAL, "entry wasn't found or isn't required type\n");
 		return NULL;
 	}
 	return pom;

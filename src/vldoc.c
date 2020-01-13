@@ -466,10 +466,7 @@ int doc_save(page_list_head * p_doc, const char * name,void * extra_args){/*extr
 	return callfunc(doc_save,p_doc->doc)(p_doc, name, extra_args);
 }
 
-
-/*-operace se strankami*/
-
-int pages_to_one(page_list_head *pglist){          /*spoji dve posobe jdouci stranky do jedne*/
+int pages_to_one(page_list_head *pglist){
 	page_list * next;
 	page_list * next_next;
 
@@ -549,25 +546,17 @@ int update_global_dimensions(page_list_head * p_doc){
 	return 0;
 }
 
-/*  transforms page according to given matrix
-    also transform page paper size and bounding box */
-int doc_page_transform(page_list * pg_handle, transform_matrix * matrix){      /*transformace stranky pomoci transformacni matice*/
+
+/*  transforms page content, bounding box and paper using the given matrix */
+void doc_page_transform(page_list *pg_handle, transform_matrix *matrix){
+    // transform page content and bbox
 	pg_handle->page=page_handle_copy_w(pg_handle->page);
-
-	transform_dimensions(&pg_handle->page->bbox,matrix);
-	transform_dimensions(&pg_handle->page->paper,matrix);
-    // set bottom left coordinate to (0,0) preserving the page width and height
-    pg_handle->page->paper.right.x -= pg_handle->page->paper.left.x;
-    pg_handle->page->paper.right.y -= pg_handle->page->paper.left.y;
-    pg_handle->page->paper.left.x = 0;
-    pg_handle->page->paper.left.y = 0;
-
-	max_dimensions(&pg_handle->page->doc->bbox,&pg_handle->page->bbox);
-	max_dimensions(&pg_handle->page->doc->paper,&pg_handle->page->paper);
-
 	transform_matrix_multi(&(pg_handle->page->matrix),matrix);
-
-	return  1;
+	transform_dimensions(&pg_handle->page->bbox,matrix);
+	max_dimensions(&pg_handle->page->doc->bbox,&pg_handle->page->bbox);
+    // transform paper
+	transform_dimensions(&pg_handle->page->paper,matrix);
+	max_dimensions(&pg_handle->page->doc->paper,&pg_handle->page->paper);
 }
 
 static int doc_page_transform_(page_list * pg_handle){
@@ -576,18 +565,17 @@ static int doc_page_transform_(page_list * pg_handle){
 	if (memcmp(pg_handle->page->matrix,matrix,sizeof(transform_matrix))==0){
 		return 0;
 	}
-
 	retval = callfunc(page_transform, pg_handle->page->doc)(pg_handle->page, &(pg_handle->page->matrix));
 	memcpy(pg_handle->page->matrix,matrix,sizeof(transform_matrix));
 	return retval;
 }
 
-int doc_page_crop(page_list * pg_handle, dimensions * dimensions){   /*orizne stranku*/
+int doc_page_crop(page_list * pg_handle, dimensions *dimension){
 	pg_handle->page=page_handle_copy_w(pg_handle->page);
 	doc_page_transform_(pg_handle);
-	copy_dimensions(&pg_handle->page->bbox,dimensions);
+	copy_dimensions(&pg_handle->page->bbox,dimension);
 	max_dimensions(&pg_handle->page->paper,&pg_handle->page->bbox);
-	return callfunc(page_crop,pg_handle->page->doc)(pg_handle->page, dimensions);
+	return callfunc(page_crop,pg_handle->page->doc)(pg_handle->page, dimension);
 }
 
 int doc_update_bbox(page_list_head * handle){
@@ -603,7 +591,6 @@ static void doc_init_pformat_dimensions(void) {
 			message(FATAL, "malloc :: fail ()");
 		}
 		memcpy(doc_page_sizes, _doc_page_sizes, sizeof(_doc_page_sizes));
-
 	}
 }
 
@@ -647,7 +634,7 @@ void doc_set_pformat_dimensions(char * name, int x, int y) {
 	doc_page_sizes[doc_page_sizes_end].dimensions.y = 0;
 }
 
-int doc_get_pformat_dimensions(int p_size,dimensions * dim){  /*vrati rozmery formatu papiru (A4 ...)*/
+int doc_get_pformat_dimensions(int p_size,dimensions * dim){
 	doc_init_pformat_dimensions();
 	dim->right.x=doc_page_sizes[p_size].dimensions.x;
 	dim->right.y=doc_page_sizes[p_size].dimensions.y;
@@ -794,7 +781,9 @@ void transform_matrix_point(coordinate * point,transform_matrix * matrix){
 	point->x=x*(*matrix)[0][0] + y*(*matrix)[1][0] + (*matrix)[2][0];
 	point->y=x*(*matrix)[0][1] + y*(*matrix)[1][1] + (*matrix)[2][1];
 }
-/*mozna to slo napsat lepe!!!*/
+
+/* apply transformation matrix, then set min coordinate as bottom left
+ and max coordinate as top right coordinate */
 void transform_dimensions(dimensions * dim, transform_matrix * matrix){
 	coordinate  p1,p2,p3,p4, max,min;
 	assert(dim!=NULL && matrix!=NULL);

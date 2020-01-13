@@ -124,14 +124,7 @@ int doc_draw_to_page_line(page_list * handle, const coordinate * begin, const co
 
 int doc_draw_to_page_text(page_list* handle, const coordinate * where,  const char * text,int size, const char * font);
 
-/**
- * \brief Funkce provede libovolne transformace se strankou
- * \param handle ukazatel na stranku
- * \param matrix transformacni matice
- * \retval 0 vse v poradku
- * \retval -1 nastal problem
- * */
-int doc_page_transform(page_list * handle, transform_matrix * matrix);
+void doc_page_transform(page_list * handle, transform_matrix * matrix);
 
 /**
  * \brief Funkce nastavi orez prislusne strance
