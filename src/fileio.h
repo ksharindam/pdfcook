@@ -39,9 +39,10 @@ long myfseek(MYFILE *stream,long offset,int origin);
 size_t myfsize(MYFILE * stream);
 
 size_t myfread(void * where, size_t size,size_t nmemb,MYFILE * stream);
+// read reverse size*nmemb bytes
 size_t myfrread(void * where, size_t size,size_t nmemb,MYFILE * stream);
 size_t myfwrite(void * where, size_t size,size_t nmemb,MYFILE * stream);
-
+// read string upto next newline
 long myfgets(char * string,int len,MYFILE * f,int * eoln);
 int slow_mygetc(MYFILE * f);
 

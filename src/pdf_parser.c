@@ -64,6 +64,7 @@ int pdf_get_object(MYFILE *f, pdf_object *p_obj, pdf_object_table *xref, pdf_tok
 	if (last_tok==NULL){
 		last_tok=&tok;
 	}
+    //printf("get obj %ld\n", myftell(f));
 	p_obj->type=PDF_OBJ_UNKNOWN;
 	while (pdf_get_tok(f,last_tok)!=-1){
 		switch (last_tok->type){
@@ -177,61 +178,61 @@ int pdf_get_object(MYFILE *f, pdf_object *p_obj, pdf_object_table *xref, pdf_tok
 				__list_add((pdf_dict*)&p_obj->val.dict,pom_dict);
 			}
 			if (last_tok->type!=PDF_T_EDICT){
+                message(WARN, "dictionary does not have end bracket\n");
 				return -1;
 			}
-			if (p_obj->type==PDF_OBJ_STREAM){
-				pom_obj=pdf_new_object();
-				pom_obj->type=PDF_OBJ_DICT;
-				pom_obj->val.dict.next=p_obj->val.dict.next;
-				pom_obj->val.dict.prev=p_obj->val.dict.prev;
-				pom_obj->val.dict.next->prev=(pdf_dict*)&(pom_obj->val.dict);
-				pom_obj->val.dict.prev->next=(pdf_dict*)&(pom_obj->val.dict);
-				p_obj->val.stream.dict=pom_obj;
-				p_obj->val.stream.stream=NULL;
-				if (pdf_get_tok(f,last_tok)!=0
-					|| last_tok->type!=PDF_T_ID
-					|| strcmp(last_tok->id,"stream")!=0){
-					return -1;
-				}
-				switch(mygetc(f)){
-					case EOF:
-						return -1;
-					case char_cr:
-						if (mygetc(f)!=char_lf){
-							stream_len-=2;
-							stream_len=stream_len<0?0:stream_len;
-
-						}
-					case char_lf:
-						break;
-					default:
-						myungetc(f);
-						break;
-				}
-				p_obj->val.stream.begin=myftell(f);
-				p_obj->val.stream.len=stream_len;
-				if (stream_len){
-					p_obj->val.stream.stream=(char *)malloc(sizeof(char) * stream_len);
-					if (p_obj->val.stream.stream==NULL){
-						message(FATAL,"malloc() error\n");
-					}
-					if (myfread(p_obj->val.stream.stream,sizeof(char),stream_len,f)!=stream_len){
-						message(FATAL,"fread() error\n");
-					}
-				}
-				else {
-					p_obj->val.stream.stream=(char *)malloc(sizeof(char) * 1);
-					if (p_obj->val.stream.stream==NULL){
-						message(FATAL,"malloc() error\n");
-					}
-				}
-				if (pdf_get_tok(f,last_tok)!=0
-					|| last_tok->type!=PDF_T_ID
-					|| strcmp(last_tok->id,"endstream")!=0){
-					return -1;
-				}
-
-			}
+			if (p_obj->type!=PDF_OBJ_STREAM)
+                return 0;
+            pom_obj=pdf_new_object();
+            pom_obj->type=PDF_OBJ_DICT;
+            pom_obj->val.dict.next=p_obj->val.dict.next;
+            pom_obj->val.dict.prev=p_obj->val.dict.prev;
+            pom_obj->val.dict.next->prev=(pdf_dict*)&(pom_obj->val.dict);
+            pom_obj->val.dict.prev->next=(pdf_dict*)&(pom_obj->val.dict);
+            p_obj->val.stream.dict=pom_obj;
+            p_obj->val.stream.stream=NULL;
+            if (pdf_get_tok(f,last_tok)!=0
+                || last_tok->type!=PDF_T_ID
+                || strcmp(last_tok->id,"stream")!=0){
+                message(WARN, "stream keyword not found\n");
+                return -1;
+            }
+            switch(mygetc(f)){
+                case EOF:
+                    return -1;
+                case char_cr:
+                    if (mygetc(f)!=char_lf){
+                        myungetc(f);
+                    }
+                case char_lf:
+                    break;
+                default:
+                    myungetc(f);
+                    break;
+            }
+            p_obj->val.stream.begin=myftell(f);
+            p_obj->val.stream.len=stream_len;
+            if (stream_len){
+                p_obj->val.stream.stream=(char *)malloc(sizeof(char) * stream_len);
+                if (p_obj->val.stream.stream==NULL){
+                    message(FATAL,"malloc() error\n");
+                }
+                if (myfread(p_obj->val.stream.stream,sizeof(char),stream_len,f)!=stream_len){
+                    message(FATAL,"fread() error\n");
+                }
+            }
+            else {
+                p_obj->val.stream.stream=(char *)malloc(sizeof(char) * 1);
+                if (p_obj->val.stream.stream==NULL){
+                    message(FATAL,"malloc() error\n");
+                }
+            }
+            if (pdf_get_tok(f,last_tok)!=0
+                || last_tok->type!=PDF_T_ID
+                || strcmp(last_tok->id,"endstream")!=0){
+                message(WARN, "endstream keyword not found\n");
+                return -1;
+            }
 			return 0;
 		case PDF_T_BARRAY:
 			p_obj->val.array.next=p_obj->val.array.prev=(pdf_array*)&(p_obj->val.array);

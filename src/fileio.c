@@ -337,10 +337,10 @@ size_t myfrread(void * where, size_t size,size_t nmemb,MYFILE * stream){
 	fseek(stream->f,fpoz-howmuch,SEEK_SET);
 	howmuch=fread(where,size,howmuch/size, stream->f);
 	fseek(stream->f,fpoz-howmuch,SEEK_SET);
-         stream->pos=0;
-	 stream->ptr=stream->buf;
-	 stream->end=stream->buf;
-	 stream->eof=0;
+    stream->pos=0;
+    stream->ptr=stream->buf;
+    stream->end=stream->buf;
+    stream->eof=0;
 	return howmuch;
 }/*myfrread()*/
 

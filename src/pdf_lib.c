@@ -359,8 +359,8 @@ int xreftable_from_stream(MYFILE *f, pdf_object_table *table, pdf_object *p_trai
 }
 
 int pdf_xreftable_get(MYFILE *f, pdf_object_table *table, long xref_poz, char *line, pdf_object *p_trailer){
-	long object_id=0;
-	long object_count=0;
+	long pos=0;
+	long object_id=0, object_count=0;
 	size_t len=0;
 	pdf_object_table_elm * elm;
 	if (myfseek(f,xref_poz, SEEK_SET)==-1){
@@ -384,6 +384,7 @@ int pdf_xreftable_get(MYFILE *f, pdf_object_table *table, long xref_poz, char *l
         while (isspace(*entry)) // fixes for leading spaces in xref table
             entry++;
         len=strlen(entry)-1;
+        if (len==-1) continue; // skip empty lines
         while (len >= 0 && isspace((unsigned char)(entry[len]))){
             entry[len]=0;
 			--len;
@@ -413,6 +414,7 @@ int pdf_xreftable_get(MYFILE *f, pdf_object_table *table, long xref_poz, char *l
 			object_id=object_begin_tmp;
 			object_count=object_count_tmp;
 		}
+        pos = myftell(f);
 	}
     //fclose(fd);
 	if (object_count!=0){
@@ -420,14 +422,17 @@ int pdf_xreftable_get(MYFILE *f, pdf_object_table *table, long xref_poz, char *l
 	}
 	while (!starts(line,"trailer")){
 		if (myfgets(line,LLEN,f,NULL)!=EOF){
-			message(FATAL,"Error during reading trailer\n");
+			message(FATAL,"trailer keyword not found\n");
 			return -1;
 		}
 	}
+    // some pdfs may have space after trailer keyword instead of newline
+    // set seek pos just after trailer keyword
+    myfseek(f, pos+8, SEEK_SET);
 	if (p_trailer==NULL
 	   || pdf_get_object(f,p_trailer,table,NULL)==-1
 	   || p_trailer->type!=PDF_OBJ_DICT){
-		message(FATAL,"Error during reading trailer.\n");
+		message(FATAL,"Could not read trailer dictionary.\n");
 		return -1;
 	}
     return 0;
