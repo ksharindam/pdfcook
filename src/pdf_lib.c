@@ -317,7 +317,7 @@ int xreftable_from_stream(MYFILE *f, pdf_object_table *table, pdf_object *p_trai
         p_arr = p_arr->next;
     }
     int row_len = w_arr[0] + w_arr[1] + w_arr[2];
-    // Index is array of pair of integers. Each pair is first obj number and count
+    // Index is array of pairs of integers. Each pair has obj number and obj count
     pdf_object *index = pdf_get_dict_name_value(p_trailer, "Index");
     if (index==NULL) {
         index = pdf_add_dict_name_value(p_trailer, "Index");
@@ -331,6 +331,10 @@ int xreftable_from_stream(MYFILE *f, pdf_object_table *table, pdf_object *p_trai
         item = item->next;
         int count = item->obj->val.int_number;
         for (int major=first; major<first+count; major++) {
+            if (table->table[major].type!=0){//skip when already set by next xref table
+                i+=row_len;
+                continue;
+            }
             char *row = obj->val.stream.stream + i;
             int field1 = w_arr[0] ? arr2int(row, w_arr[0]) : 1; // this field may not exist
             int field2 = arr2int(row+w_arr[0], w_arr[1]);
@@ -399,10 +403,12 @@ int pdf_xreftable_get(MYFILE *f, pdf_object_table *table, long xref_poz, char *l
             //fprintf(fd, "%s\n", entry);
 			table=object_table_realoc(table,object_id + object_count);
 			elm=&(table->table[object_id]);
-			elm->offset = object_offset_tmp;
-			elm->major = object_id;
-			elm->minor = object_gen_id_tmp;
-			elm->type = object_used_tmp=='n'? 1 : 0;
+            if (elm->type==0){ // skip if already set by next xreftable
+                elm->offset = object_offset_tmp;
+                elm->major = object_id;
+                elm->minor = object_gen_id_tmp;
+                elm->type = object_used_tmp=='n'? 1 : 0;
+            }
 			++object_id;
 			--object_count;
 		}

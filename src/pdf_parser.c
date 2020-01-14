@@ -358,6 +358,10 @@ int pdf_read_object(MYFILE *f, int major, pdf_object_table *xref) {
             myfseek(file, last_seek, SEEK_SET);
         }
         myfclose(file);
+        pdf_delete_object(xref->table[obj_stm_no].obj);
+        free(xref->table[obj_stm_no].obj);
+        xref->table[obj_stm_no].obj=NULL;
+        xref->table[obj_stm_no].type=0;
     }
     return 0;
 }
@@ -683,8 +687,8 @@ void pdf_filter_dict(pdf_object * p_obj, char * filter[]){
 				break;
 			}
 		}
-			pom=it;
-			it=it->next;
+        pom=it;
+        it=it->next;
 		if (*ptn==NULL){
 			__list_elm_remove(pom);
 			pdf_delete_object(pom->obj);
