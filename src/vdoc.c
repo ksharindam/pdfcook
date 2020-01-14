@@ -168,8 +168,9 @@ int pages_number(page_list_head * p_doc,int x, int y, int start,char *text, char
 		}
 	}
 	for(page=page_next(page_begin(p_doc));page!=page_end(p_doc);page=page_next(page)){
-        poz.x= (x!=-1)? x:(page->page->bbox.right.x-page->page->bbox.left.x)/2 + page->page->bbox.left.x;
-        poz.y= (y!=-1)? y: size+10;
+        poz.x = (x!=-1)? page->page->paper.left.x +x : page->page->paper.left.x +
+                (page->page->paper.right.x-page->page->paper.left.x)/2;
+        poz.y = (y!=-1)? page->page->paper.left.y +y : page->page->paper.left.y + size+10;
 		asprintf(&out,text,start++);
         if (start>1)
 		    doc_draw_to_page_text(page,&poz,out,size,font);
