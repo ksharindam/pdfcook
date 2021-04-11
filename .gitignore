@@ -1,0 +1,10 @@
+# Compiled Libraries
+*.so
+*.o
+
+# Compiled Binaries
+pdfcook
+
+# User created dirs
+build/
+test/

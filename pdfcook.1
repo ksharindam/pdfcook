@@ -1,0 +1,296 @@
+.TH pdfcook 1 "2021-04-10"
+.SH NAME
+pdfcook - tool for prepress preparation of PDF documents
+
+.SH SYNOPSIS
+.B pdfcook
+[OPTIONS] [\fIcommands\fR] \fIinfile\fR [infile2..] [\fIoutfile\fR]
+
+.SH DESCRIPTION
+.I pdfcook
+is used for preparing PDF documents before printing.
+.br
+It can split, join PDFs,
+add page numbers, text, draw lines, scale, rotate, add binding margin,
+arrange in 2-up, 4-up, booklet format.
+
+.SH OPTIONS
+.TP
+.B "\-q   \-\-quiet"
+Suppress warnings
+.TP
+.B "\-p   \-\-papers"
+Show list of available paper sizes
+.TP
+.B "     \-\-fonts"
+Show available standard fonts
+
+.SH COMMANDS
+Commands follow this syntax :
+.RS
+.TP 10
+.I commands
+= "command1 command2 ..."
+.TP
+.I command
+= name(arg, name1=arg1 ...){page_selections}
+.TP
+.I {page_selections}
+space separated list of page_selection inside curly bracket.
+All commands support page_selections.
+
+.RE
+Argument types :
+.RS
+.TP 12
+int :
+an integer number (1,2, 45 etc)
+.TP
+real :
+a number with or without decimal point. (5, 1.2 etc)
+.TP
+measure :
+An integer or real followed by a unit like pt,cm,mm,in.
+If unit is omitted, the unit is assumed as point (pt).
+eg- 595, 595.0, 210mm, 21.0cm
+.TP
+id :
+An identifier is unquoted string. eg- a4, landscape
+.TP
+str :
+Double-quoted string. eg- "Page No %d"
+
+.RE
+page_selection :
+.RS
+.TP
+.B number
+page number
+.TP
+.B -number
+page from end of the list. -1 is last page
+.TP
+.B number..number
+8..20 means all pages from 8 to 20
+.TP
+.B -number..number
+-1..5 means from last page to fifth last page
+.TP
+.B $
+last page
+.TP
+.B ?
+odd set of pages
+.TP
+.B +
+even set of pages
+.RE
+
+
+List of supported commands :
+
+Commands for working with documents :
+
+.RS
+.TP 12
+.B read
+.I (name)
+
+Open document and merge with previous document
+.TP
+.B write
+.I (name)
+
+Save document by given filename
+
+.RE
+Commands for arrange or select pages :
+.RS
+
+.TP
+.B new
+.I {page_ranges}
+
+Add new pages.
+.br
+If page_ranges not provided, the page is added to end
+
+.TP
+.B del
+.I {page_ranges}
+
+Delete selected pages
+
+.TP
+.B select
+.I {page_ranges}
+
+Keep only selected pages in page_ranges.
+
+.TP
+.B modulo
+.I (step, round){page_ranges}
+
+Special type of select pages.
+.br
+This command iterate pages by given step.
+.br
+such as if step=4, index are 0, 4, 8, 12 ...
+.br
+if command is modulo(4){1 2 3} then chosen pages are,
+.br
+for index 0 -> 4*0+1, 4*0+2, 4*0+3 = 1, 2, 3
+.br
+for index 1 -> 5, 6, 7
+.br
+thus page numbers will be in 1,2,3,5,6,7,9,10,11.. order
+.br
+if command is modulo(4){-1}, selected pages are
+.br
+-(4*0+1), -(4*1+1), -(4*2+1), -(4*3+1) ...
+.br
+= -1, -5, -9, -13, ...
+.br
+'round' option adds extra blank pages to make total page count multiple of round
+
+.TP
+.B book
+Arrange pages for printing booklets. Use nup command after this.
+So pages can be center-folded after printing.
+
+.TP
+.B nup
+.I (n, cols, dx, dy, paper, orient)
+
+Puts n pages in one paper. cols is number of columns.
+dx and dy are spacings between pages along x and y axis.
+
+.RE
+Command for pages' content transform:
+.RS
+.TP 10
+.B crop
+.I (paper, orient)
+
+Make outside area blank white. eg- crop(a4, portrait)
+
+.TP
+.B crop2
+.I (lx, ly, hx, hy)
+
+Crop pages to the exact size
+
+.TP
+.B flip
+.I (mode=<h|v>) 
+
+horizontal or vertical flip. eg- flip(v) or flip(vertical)
+
+.TP
+.B line 
+.I (lx, ly, hx, hy, width)
+
+Draw line on page
+
+.TP
+.B matrix
+.I (a,b,c,d,e,f)
+
+Transform pages by 3x3 matrix [a,b,0, c,d,0, e,f,1]
+
+.TP
+.B move
+.I (x, y)
+
+Move page to right by x and to top by y
+
+.TP
+.B number
+.I (x, y, start, text, size, font)
+
+Write page numbers over pages. numbering is started from 'start' page no. 
+eg - number(start=3)
+
+.TP
+.B paper
+.I (paper, orient)
+
+Set paper size without scaling content.
+
+.TP
+.B paper2
+.I (w, h)
+
+Sets papes size to exact width and height
+
+.TP
+.B rotate
+.I (angle)
+
+Rotate page clockwise. angle must be multiple of 90
+
+.TP
+.B scale
+.I (scale)
+
+Scale pages by specified scale factor
+
+.TP
+.B scaleto
+.I (paper, top, right, bottom, left, orient)
+
+Fit page to paper size and specified margins. eg - scaleto(a4)
+
+.TP
+.B scaleto2
+.I (w, h, top, right, bottom, left)
+
+Scale to particular width and height and margins
+
+.TP
+.B text
+.I (x, y, text, font, size)
+
+Write text on page at position (x,y)
+
+.RE
+
+
+.SH EXAMPLES
+Booklet format in A4 page
+.sp
+.ce
+.B book nup(2, paper=a4)
+.sp
+Select first five and last five pages from document
+.sp
+.ce
+.B select{1..5 -5..1}
+.sp
+Reverse pages
+.sp
+.ce
+.B select{$..1}
+.sp
+or
+.sp
+.ce
+.B modulo(1){-1}
+.sp
+Select even pages
+.sp
+.ce
+.B select{+}
+.sp
+Fit page to a4 landscape
+.sp
+.ce
+.B scaleto(a4, orient=landscape)
+
+.SH AUTHORS
+Arindam Chaudhuri <ksharindam@gmail.com>
+.SH TRADEMARKS
+.B PDF
+is trademark of Adobe Systems Incorporated.
+
+
