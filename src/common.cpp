@@ -38,7 +38,16 @@ int strint(char *what, char *from[]){
 }
 */
 
-
+// read a big endian integer provided as char array
+int arr2int(char *arr, int len)
+{
+    char tmp[4] = {};
+    for (int i=0; i<len; i++) {
+        tmp[4-len+i] = arr[i];
+    }
+    // network byte order is big endian, eg. int 16 is stored as 0x000010 in 3 bytes
+    return ((uint)tmp[0]<<24 | (uint)tmp[1]<<16 | (uint)tmp[2]<<8 | (uint)tmp[3] );
+}
 
 
 #ifndef HAVE_ASPRINTF

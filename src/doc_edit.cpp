@@ -125,14 +125,15 @@ bool doc_pages_number (PdfDocument &doc, PageRanges &pages,
     Font font = doc.newFontObject(font_name);
 
 	for (int page_num : pages) {
+        if (page_num-start<1)
+            continue;
         PdfPage &page = doc.page_list[page_num-1];// page index = page_num -1
         Rect page_size = page.pageSize();
         poz.x = (x!=-1) ? page_size.left.x +x :
                         page_size.left.x + (page_size.right.x - page_size.left.x)/2;
         poz.y = (y!=-1) ? page_size.left.y + y : page_size.left.y + size+10;
-		asprintf(&str, text, start+page_num);
-        if (start+page_num>0)
-		    page.drawText(str, poz, size, font);
+		asprintf(&str, text, page_num-start);
+        page.drawText(str, poz, size, font);
 		free(str);
 	}
 	return true;
