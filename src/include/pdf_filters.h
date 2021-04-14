@@ -10,16 +10,17 @@ int flate_decode_filter(char **stream, size_t *len, DictObj &dict);
 
 
 #ifdef HAVE_LZW
-	int lzw_decompress_filter(char **stream, size_t *len, DictObj &dict);
-	#define lzw_compress_filter NULL
+int lzw_decompress_filter(char **stream, size_t *len, DictObj &dict);
+#define lzw_compress_filter NULL
 #else
-	#define lzw_compress_filter NULL
-	#define lzw_decompress_filter NULL
+#define lzw_compress_filter NULL
+#define lzw_decompress_filter NULL
 #endif
 
-typedef struct {
-	const char *name;
-	int (*filter)(char **stream, size_t *len, DictObj &dict);
+typedef struct
+{
+    const char *name;
+    int (*filter)(char **stream, size_t *len, DictObj &dict);
 } stream_filters;
 
 int apply_filter(const char *name, char **stream, size_t *len, DictObj &dict, stream_filters *filters, size_t f_len);

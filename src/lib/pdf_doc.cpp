@@ -7,13 +7,14 @@
 static void updateRefs(PdfDocument &doc);
 static void deleteUnusedObjects(PdfDocument &doc);
 
-static DictFilter trailer_filter({ "Size", "Root", "ID"});
-static DictFilter catalog_filter({ "Pages", "Type"});
-static DictFilter page_filter({ "Type", "Parent", "Resources", "Contents" });
-static DictFilter xobject_filter({ "Type", "Subtype", "FormType", "BBox", "Resources", "Length", "Filter"});
+static DictFilter trailer_filter( { "Size", "Root", "ID"});
+static DictFilter catalog_filter( { "Pages", "Type"});
+static DictFilter page_filter( { "Type", "Parent", "Resources", "Contents" });
+static DictFilter xobject_filter( { "Type", "Subtype", "FormType", "BBox", "Resources", "Length", "Filter"});
 
 // These standard 14 font names are supported by all PDF viewers
-static std::set<std::string> standard_fonts({
+static std::set<std::string> standard_fonts(
+{
     "Times-Roman", "Times-Bold", "Times-Italic", "Times-BoldItalic",
     "Helvetica", "Helvetica-Bold", "Helvetica-Oblique", "Helvetica-BoldOblique",
     "Courier", "Courier-Bold", "Courier-Oblique", "Courier-BoldOblique",
@@ -23,12 +24,14 @@ static std::set<std::string> standard_fonts({
 void print_font_names()
 {
     fprintf(stderr, "Standard 14 Fonts :\n");
-    for (auto font : standard_fonts) {
+for (auto font : standard_fonts)
+    {
         fprintf(stderr, "    %s\n", font.c_str());
     }
 }
 
-void PageList:: append(PdfPage &page) {
+void PageList:: append(PdfPage &page)
+{
     array.push_back(page);
 }
 void PageList:: remove(int index)
@@ -40,13 +43,16 @@ void PageList:: clear()
     array.clear();
 }
 
-int PageList:: count() {
+int PageList:: count()
+{
     return array.size();
 }
-PageIter PageList:: begin() {
+PageIter PageList:: begin()
+{
     return array.begin();
 }
-PageIter PageList:: end() {
+PageIter PageList:: end()
+{
     return array.end();
 }
 
@@ -64,7 +70,8 @@ PdfDocument:: ~PdfDocument()
 {
     page_list.clear();
     int count = obj_table.count();
-    for (int i=0; i<count; i++) {
+    for (int i=0; i<count; i++)
+    {
         PdfObject *obj = obj_table[i].obj;
         if (obj!=NULL)
             delete obj;
@@ -85,14 +92,17 @@ bool PdfDocument:: getPdfHeader (MYFILE *f, char *line)
     // get pdf version
     char *endptr;
     major = strtol(line+5, &endptr, 10);
-    if (*endptr=='.'){
+    if (*endptr=='.')
+    {
         endptr++;
         minor = strtol(endptr, &endptr, 10);
     }
-    if (*endptr!='\0'){
+    if (*endptr!='\0')
+    {
         message(WARN, "Missing new line after PDF head");
     }
-    if (major<1 || minor<0 || (major==1 && minor<4) ){
+    if (major<1 || minor<0 || (major==1 && minor<4) )
+    {
         major = 1;
         minor = 4;
     }
@@ -107,21 +117,26 @@ bool PdfDocument:: getPdfTrailer (MYFILE *f, char *line, long offset)
     int i, n, c;
     unsigned char * p;
 
-    if (offset==-1){ //first trailer, seek end and find trailer offset
-        if (myfseek(f, -1 * PDF_TRAILER_OFFSET, SEEK_END)==-1){
+    if (offset==-1)  //first trailer, seek end and find trailer offset
+    {
+        if (myfseek(f, -1 * PDF_TRAILER_OFFSET, SEEK_END)==-1)
+        {
             fprintf(stderr,"Seek error\n");
             return false;
         }
-        for (n=0; n<PDF_TRAILER_OFFSET && (c=mygetc(f))!=EOF; ++n){
+        for (n=0; n<PDF_TRAILER_OFFSET && (c=mygetc(f))!=EOF; ++n)
+        {
             buf[n] = c;
         }
         buf[n] = '\0';
         // find startxref
-        for (i = n-9; i >= 0; --i) {
+        for (i = n-9; i >= 0; --i)
+        {
             if (!strncmp((char *)(buf+i), "startxref", 9))
                 break;
         }
-        if (i < 0) {
+        if (i < 0)
+        {
             message(FATAL,"'startxref' not found");
             return false;
         }
@@ -130,20 +145,25 @@ bool PdfDocument:: getPdfTrailer (MYFILE *f, char *line, long offset)
     }
 
     PdfObject *p_trailer = new PdfObject();
-    if (not obj_table.get(f, offset, line, p_trailer)){
+    if (not obj_table.get(f, offset, line, p_trailer))
+    {
         message(FATAL,"xreftable read error");
         return false;
     }
-    if (p_trailer->dict->contains("Encrypt")){
+    if (p_trailer->dict->contains("Encrypt"))
+    {
         message(FATAL,"This pdf is encrypted, sorry, I cannot work with it");
     }
     PdfObject *prev = p_trailer->dict->get("Prev");
-    if (prev){
-        if (prev->type!=PDF_OBJ_INT){
+    if (prev)
+    {
+        if (prev->type!=PDF_OBJ_INT)
+        {
             message(FATAL,"Object in dict of trailer Prev is not int");
             return false;
         }
-        if (not getPdfTrailer(f, line, prev->integer)){
+        if (not getPdfTrailer(f, line, prev->integer))
+        {
             return false;
         } // this->trailer = Prev trailer, p_trailer = current trailer
     }
@@ -157,13 +177,15 @@ bool PdfDocument:: getAllPages(MYFILE *f)
 {
     PdfObject *pobj = trailer->dict->get("Root");//get Catalog
 
-    if (not isRef(pobj)) {
+    if (not isRef(pobj))
+    {
         message(FATAL,"Trailer dictionary doesn't contain Root entry");
     }
     pobj = obj_table.getObject(pobj->indirect.major, pobj->indirect.minor);
     pobj->dict->filter(catalog_filter);
     pobj = pobj->dict->get("Pages");
-    if (not isRef(pobj)){
+    if (not isRef(pobj))
+    {
         message(FATAL,"Catalog dictionary dosn't contain Pages entry");
     }
     bool ret_val = getPdfPages(f, pobj->indirect.major, pobj->indirect.minor);
@@ -175,10 +197,12 @@ bool PdfDocument:: open (const char *fname)
     MYFILE *f;
     char iobuffer[LLEN];
 
-    if ((f=myfopen(fname, "rb"))==NULL){
+    if ((f=myfopen(fname, "rb"))==NULL)
+    {
         return false;
     }
-    if (not getPdfHeader(f,iobuffer) || not getPdfTrailer(f,iobuffer,-1)){
+    if (not getPdfHeader(f,iobuffer) || not getPdfTrailer(f,iobuffer,-1))
+    {
         return false;
     }
     obj_table.readObjects(f);
@@ -201,44 +225,55 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
 
     pages = obj_table.getObject(major, minor);
     pages_type = pages->dict->get("Type");
-    if (not isName(pages_type)){
+    if (not isName(pages_type))
+    {
         message(FATAL,"Pages/Page dictionary dosn't contain Type entry");
     }
     /*Pages node*/
-    if (strcmp("Pages", pages_type->name)==0){
+    if (strcmp("Pages", pages_type->name)==0)
+    {
         tmp_paper = this->paper;
         tmp_bbox = this->bbox;
         // set paper size
         this->paper.getFromObject(pages->dict->get("MediaBox"), obj_table);
         // set bounding box
         bbox_is_cropbox = false;
-        if (!this->bbox.getFromObject(pages->dict->get("CropBox"), obj_table)){
-            if (!this->bbox.getFromObject(pages->dict->get("TrimBox"), obj_table)){
+        if (!this->bbox.getFromObject(pages->dict->get("CropBox"), obj_table))
+        {
+            if (!this->bbox.getFromObject(pages->dict->get("TrimBox"), obj_table))
+            {
                 this->bbox = Rect();
             }
         }
         else bbox_is_cropbox = true;
         // get all childs, each child may be a Pages Node, or a Page Object
         kids = pages->dict->get("Kids");
-        if (kids->type==PDF_OBJ_INDIRECT_REF){
+        if (kids->type==PDF_OBJ_INDIRECT_REF)
+        {
             kids = obj_table.getObject(kids->indirect.major, kids->indirect.minor);
         }
-        if (not isArray(kids)){
+        if (not isArray(kids))
+        {
             message(FATAL,"Pages dictionary dosn't contain Kids entry");
         }
         resources = pages->dict->get("Resources");
-        for (auto kid=kids->array->begin(); kid!=kids->array->end(); kid++){
-            if ((*kid)->type!=PDF_OBJ_INDIRECT_REF){
+        for (auto kid=kids->array->begin(); kid!=kids->array->end(); kid++)
+        {
+            if ((*kid)->type!=PDF_OBJ_INDIRECT_REF)
+            {
                 message(FATAL,"Kids array doesn't contain indirect ref objects");
             }
             // add resources of Pages Node to child page Resources
-            if (resources){
+            if (resources)
+            {
                 child_pg = obj_table.getObject((*kid)->indirect.major, (*kid)->indirect.minor);
                 // child has Resources entry, merge with parent's Resources Dict
-                if ((child_resources = child_pg->dict->get("Resources"))!=NULL){
+                if ((child_resources = child_pg->dict->get("Resources"))!=NULL)
+                {
                     child_resources->dict->merge(resources->dict);
                 }
-                else {// child doesn't have Resources entry, copy all Resources from parent
+                else  // child doesn't have Resources entry, copy all Resources from parent
+                {
                     resources_tmp = child_pg->dict->newItem("Resources");
                     resources_tmp->copyFrom(resources);
                 }
@@ -250,7 +285,8 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
         return true;
     }
     /*Page leaf*/
-    if (strcmp("Page", pages_type->name)==0){
+    if (strcmp("Page", pages_type->name)==0)
+    {
         PdfPage new_page;
         /* Page Boundaries are very confusing. There are 4 types of Boundaries
            MediaBox = Paper Size on which page is printed
@@ -260,16 +296,20 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
            TrimBox = Same as CropBox When FitToPage is on in printer, otherwise no effect.
            BleedBox and ArtBpx has no effect either in printer or in viewer
         */
-        if (!new_page.paper.getFromObject(pages->dict->get("MediaBox"), obj_table)) {
+        if (!new_page.paper.getFromObject(pages->dict->get("MediaBox"), obj_table))
+        {
             // Page does not have this entry, means it has to be inherited from Parent Pages node
             new_page.paper = this->paper;
         }
         // in a pdfviewer, the visible page size is the CropBox
-        if (new_page.bbox.getFromObject(pages->dict->get("CropBox"), obj_table)){
+        if (new_page.bbox.getFromObject(pages->dict->get("CropBox"), obj_table))
+        {
             new_page.bbox_is_cropbox = true;
         }
-        else if (!new_page.bbox.getFromObject(pages->dict->get("TrimBox"), obj_table)){
-            if (not this->bbox.isZero()) {
+        else if (!new_page.bbox.getFromObject(pages->dict->get("TrimBox"), obj_table))
+        {
+            if (not this->bbox.isZero())
+            {
                 new_page.bbox = this->bbox;
                 new_page.bbox_is_cropbox = this->bbox_is_cropbox;
             }
@@ -301,23 +341,28 @@ static int makePagesTree(int *nodes, int pages_count, ObjectTable &obj_table)
     int nodes_count, count, major=0;
     // calculate how many nodes we need to contain all pages
     nodes_count = (pages_count/NODE_MAX)+((pages_count%NODE_MAX)?1:0);
-    for (int i=0; i<nodes_count; ++i){
+    for (int i=0; i<nodes_count; ++i)
+    {
         // create new Pages node object
         node = new PdfObject();
         node->readFromString("<< /Type /Pages /Count 0 /Kids [ ]  /Parent 0 0 R >>");
         major = obj_table.addObject(node);
         kids = node->dict->get("Kids");
         count = 0;
-        for (int j=0; j<NODE_MAX; ++j){
+        for (int j=0; j<NODE_MAX; ++j)
+        {
             int pg_num = i*NODE_MAX + j;//index of this child on nodes array
-            if (pg_num>=pages_count){
+            if (pg_num>=pages_count)
+            {
                 break;
             }
             page = obj_table[ nodes[pg_num] ].obj;// Page leaf or Pages Node
-            if (((pobj=page->dict->get("Count"))!=NULL) && isInt(pobj)){
+            if (((pobj=page->dict->get("Count"))!=NULL) && isInt(pobj))
+            {
                 count += pobj->integer;
             }
-            else{
+            else
+            {
                 count++;
             }
             pobj = page->dict->get("Parent");
@@ -336,10 +381,12 @@ static int makePagesTree(int *nodes, int pages_count, ObjectTable &obj_table)
         // add this node to nodes array, so this function can be run recursively
         nodes[i] = major;
     }
-    if (nodes_count>1) {
+    if (nodes_count>1)
+    {
         return makePagesTree(nodes, nodes_count, obj_table);
     }
-    if (nodes_count==1) {
+    if (nodes_count==1)
+    {
         node = obj_table[ nodes[0] ].obj;
         node->dict->deleteItem("Parent");
         return major;
@@ -352,20 +399,23 @@ void PdfDocument:: putPdfPages()
 {
     PdfObject *pobj;
 
-    if (page_list.count()<1){
+    if (page_list.count()<1)
+    {
         message(FATAL, "Cannot create PDF with zero pages");
     }
     int *nodes = (int*) malloc(sizeof(int) * page_list.count());
     assert(nodes!=NULL);
     int count=0;
     // store major nums in nodes array, which is required for creating pages tree
-    for (auto page=page_list.begin(); page!=page_list.end(); page++,count++){
+    for (auto page=page_list.begin(); page!=page_list.end(); page++,count++)
+    {
         nodes[count] = page->major;
         pobj = obj_table.getObject(page->major, page->minor);
         // set paper size and bbox size in Page Dict
         page->paper.setToObject(pobj->dict->newItem("MediaBox"));
 
-        if (!page->bbox.isZero()) {
+        if (!page->bbox.isZero())
+        {
             const char *bbox_name = page->bbox_is_cropbox ? "CropBox" : "TrimBox";
             page->bbox.setToObject(pobj->dict->newItem(bbox_name));
         }
@@ -388,9 +438,11 @@ bool PdfDocument:: save (const char *filename)
     PdfObject *pobj;
     FILE *f = stdout;
 
-    if (strcmp(filename,"-")!=0){
+    if (strcmp(filename,"-")!=0)
+    {
         f = fopen(filename,"wb");
-        if (f==NULL){
+        if (f==NULL)
+        {
             message(ERROR, "Cannot open for writing file '%s'",filename);
             return false;
         }
@@ -422,25 +474,28 @@ bool PdfDocument:: save (const char *filename)
 void
 PdfDocument:: mergeDocument(PdfDocument &doc)
 {
-	int offset = obj_table.count();
+    int offset = obj_table.count();
     // new obj_table size is one less than size of the two tables.
     // because, we dont need to copy first item of the second obj_table.
-	obj_table.expandToFit(obj_table.count()+doc.obj_table.count()-1);
+    obj_table.expandToFit(obj_table.count()+doc.obj_table.count()-1);
 
-	for (int i=1; i<doc.obj_table.count(); ++i){
-		doc.obj_table[i].major = offset+i-1;
-		doc.obj_table[i].minor = 0;
-	}
-	updateRefs(doc);
+    for (int i=1; i<doc.obj_table.count(); ++i)
+    {
+        doc.obj_table[i].major = offset+i-1;
+        doc.obj_table[i].minor = 0;
+    }
+    updateRefs(doc);
 
-    for (auto &page : doc.page_list) {
+for (auto &page : doc.page_list)
+    {
         page.doc = this;
         page_list.append(page);
     }
-	for (int i=1; i<doc.obj_table.count(); i++) {
+    for (int i=1; i<doc.obj_table.count(); i++)
+    {
         ObjectTableItem item = doc.obj_table[i];
         obj_table[item.major] = item;
-	}
+    }
     doc.obj_table.table.clear();
 }
 
@@ -449,92 +504,105 @@ PdfDocument:: mergeDocument(PdfDocument &doc)
 // flag 1 objects will not be deleted during write
 static void flag_used_objects (PdfObject *obj, ObjectTable &table)
 {
-    switch (obj->type){
-        case PDF_OBJ_BOOL:
-        case PDF_OBJ_INT:
-        case PDF_OBJ_REAL:
-        case PDF_OBJ_STR:
-        case PDF_OBJ_NAME:
-        case PDF_OBJ_NULL:
+    switch (obj->type)
+    {
+    case PDF_OBJ_BOOL:
+    case PDF_OBJ_INT:
+    case PDF_OBJ_REAL:
+    case PDF_OBJ_STR:
+    case PDF_OBJ_NAME:
+    case PDF_OBJ_NULL:
+        return;
+    case PDF_OBJ_ARRAY:
+for (auto it : *obj->array)
+        {
+            flag_used_objects(it, table);
+        }
+        return;
+    case PDF_OBJ_DICT:
+for (auto it : *obj->dict)
+        {
+            flag_used_objects(it.second, table);
+        }
+        return;
+    case PDF_OBJ_STREAM:
+for (auto it : obj->stream->dict)
+        {
+            flag_used_objects(it.second, table);
+        }
+        return;
+    case PDF_OBJ_INDIRECT_REF:
+        if (table[obj->indirect.major].used)
+        {
             return;
-        case PDF_OBJ_ARRAY:
-            for (auto it : *obj->array) {
-                flag_used_objects(it, table);
-            }
+        }
+        table[obj->indirect.major].used = true;
+        if (table[obj->indirect.major].obj==NULL)
+        {
+            // in some bad pdfs even the object is free, the object is referenced
+            message(WARN, "referencing free obj : %d %d R", obj->indirect.major, obj->indirect.minor);
+            table[obj->indirect.major].obj = new PdfObject();
+            table[obj->indirect.major].obj->type = PDF_OBJ_NULL;
             return;
-        case PDF_OBJ_DICT:
-            for (auto it : *obj->dict){
-                flag_used_objects(it.second, table);
-            }
-            return;
-        case PDF_OBJ_STREAM:
-            for (auto it : obj->stream->dict){
-                flag_used_objects(it.second, table);
-            }
-            return;
-        case PDF_OBJ_INDIRECT_REF:
-            if (table[obj->indirect.major].used){
-                return;
-            }
-            table[obj->indirect.major].used = true;
-            if (table[obj->indirect.major].obj==NULL){
-                // in some bad pdfs even the object is free, the object is referenced
-                message(WARN, "referencing free obj : %d %d R", obj->indirect.major, obj->indirect.minor);
-                table[obj->indirect.major].obj = new PdfObject();
-                table[obj->indirect.major].obj->type = PDF_OBJ_NULL;
-                return;
-            }
-            flag_used_objects(table[obj->indirect.major].obj, table);
-            return;
-        default:
-            assert(0);
+        }
+        flag_used_objects(table[obj->indirect.major].obj, table);
+        return;
+    default:
+        assert(0);
     }
 }
 
 // Replace old references with new references of same object
 static void update_obj_ref(PdfObject *obj, ObjectTable &table)
 {
-    switch (obj->type){
-        case PDF_OBJ_BOOL:
-        case PDF_OBJ_INT:
-        case PDF_OBJ_REAL:
-        case PDF_OBJ_STR:
-        case PDF_OBJ_NAME:
-        case PDF_OBJ_NULL:
-            return;
-        case PDF_OBJ_ARRAY:
-            for (auto it : *obj->array) {
-                update_obj_ref(it, table);
-            }
-            return;
-        case PDF_OBJ_DICT:
-            for (auto it : *obj->dict){
-                update_obj_ref(it.second, table);
-            }
-            return;
-        case PDF_OBJ_STREAM:
-            for (auto it : obj->stream->dict){
-                update_obj_ref(it.second, table);
-            }
-            return;
-        case PDF_OBJ_INDIRECT_REF:
-            obj->indirect.minor = table[obj->indirect.major].minor;
-            obj->indirect.major = table[obj->indirect.major].major;
-            return;
-        default:
-            assert(0);
+    switch (obj->type)
+    {
+    case PDF_OBJ_BOOL:
+    case PDF_OBJ_INT:
+    case PDF_OBJ_REAL:
+    case PDF_OBJ_STR:
+    case PDF_OBJ_NAME:
+    case PDF_OBJ_NULL:
+        return;
+    case PDF_OBJ_ARRAY:
+for (auto it : *obj->array)
+        {
+            update_obj_ref(it, table);
+        }
+        return;
+    case PDF_OBJ_DICT:
+for (auto it : *obj->dict)
+        {
+            update_obj_ref(it.second, table);
+        }
+        return;
+    case PDF_OBJ_STREAM:
+for (auto it : obj->stream->dict)
+        {
+            update_obj_ref(it.second, table);
+        }
+        return;
+    case PDF_OBJ_INDIRECT_REF:
+        obj->indirect.minor = table[obj->indirect.major].minor;
+        obj->indirect.major = table[obj->indirect.major].major;
+        return;
+    default:
+        assert(0);
     }
 }
 
 static void updateRefs(PdfDocument &doc)
 {
-    for (auto& page : doc.page_list) {// page.minor must be set before page.major
+for (auto& page : doc.page_list)  // page.minor must be set before page.major
+    {
         page.minor = doc.obj_table[page.major].minor;
         page.major = doc.obj_table[page.major].major;
     }
     update_obj_ref(doc.trailer, doc.obj_table);
-    for (int i=0; i<doc.obj_table.count(); i++) {
-        if (doc.obj_table[i].type) {
+    for (int i=0; i<doc.obj_table.count(); i++)
+    {
+        if (doc.obj_table[i].type)
+        {
             update_obj_ref(doc.obj_table[i].obj, doc.obj_table);
         }
     }
@@ -547,21 +615,25 @@ static void updateRefs(PdfDocument &doc)
 static void deleteUnusedObjects(PdfDocument &doc)
 {
     // flag all objects as unused
-    for (int i=0; i<doc.obj_table.count(); ++i){
+    for (int i=0; i<doc.obj_table.count(); ++i)
+    {
         doc.obj_table[i].major = i;
         doc.obj_table[i].used = false;
     }
     // flag used=1 for used objects
     flag_used_objects(doc.trailer, doc.obj_table);
     // delete unused objects
-    for (int i=1,major=1; i<doc.obj_table.count(); ++i){
-        if (doc.obj_table[i].used){
+    for (int i=1,major=1; i<doc.obj_table.count(); ++i)
+    {
+        if (doc.obj_table[i].used)
+        {
             doc.obj_table[i].type = 1;
             doc.obj_table[i].major = major;
             //printf("%d %d\n", i, major);
             ++major;
         }
-        else if (doc.obj_table[i].type!=0){ // obj loaded in memory but not used
+        else if (doc.obj_table[i].type!=0)  // obj loaded in memory but not used
+        {
             doc.obj_table[i].type = 0;
             delete doc.obj_table[i].obj;
             doc.obj_table[i].obj = NULL;
@@ -570,9 +642,12 @@ static void deleteUnusedObjects(PdfDocument &doc)
     updateRefs(doc);
     // copy ObjectTable items from old position to new position, and shrink obj_table
     int max_obj_no = 0;
-    for (int i=1; i<doc.obj_table.count(); ++i){
-        if (doc.obj_table[i].used){
-            if (i!=doc.obj_table[i].major){
+    for (int i=1; i<doc.obj_table.count(); ++i)
+    {
+        if (doc.obj_table[i].used)
+        {
+            if (i!=doc.obj_table[i].major)
+            {
                 memcpy(&doc.obj_table[doc.obj_table[i].major], &doc.obj_table[i], sizeof(ObjectTableItem));
             }
             max_obj_no = doc.obj_table[i].major;
@@ -585,7 +660,8 @@ static void deleteUnusedObjects(PdfDocument &doc)
 void
 PdfDocument:: applyTransformations()
 {
-    for (auto &page : page_list) {
+for (auto &page : page_list)
+    {
         page.applyTransformation();
     }
 }
@@ -597,14 +673,16 @@ ________________________________________________________________________*/
 bool
 PdfDocument:: newBlankPage(int page_num)
 {
-    if (page_num==-1) {
+    if (page_num==-1)
+    {
         page_num = page_list.count()+1;
     }
-    else if (page_num < 1 and page_num > (page_list.count()+1)) {
+    else if (page_num < 1 and page_num > (page_list.count()+1))
+    {
         message(WARN, "newBlankPage() : invalid page num %d", page_num);
         return false;
     }
-	PdfObject *page, *content;
+    PdfObject *page, *content;
 
     page = new PdfObject();
     // to set this page as compressed=false, Resources dict must be present (even empty)
@@ -621,7 +699,7 @@ PdfDocument:: newBlankPage(int page_num)
     content->indirect.minor = obj_table[major].minor;
 
     major = obj_table.addObject(page);
-	PdfPage p_page;
+    PdfPage p_page;
     p_page.major = major;
     p_page.minor = obj_table[major].minor;
     p_page.compressed = false;
@@ -635,10 +713,12 @@ PdfDocument:: newBlankPage(int page_num)
     p_page.bbox = page_list[ref_page_num-1].pageSize();
     p_page.bbox_is_cropbox = page_list[ref_page_num-1].bbox_is_cropbox;
 
-    if (page_num > page_list.count()) {
+    if (page_num > page_list.count())
+    {
         page_list.append(p_page);
     }
-    else {
+    else
+    {
         page_list.array.emplace(page_list.array.begin()+(page_num-1), p_page);//c++11
     }
     return true;
@@ -648,10 +728,12 @@ Font
 PdfDocument:: newFontObject(const char *font_name)
 {
     Font font;
-	if (font_name == NULL){
-		font_name = "Helvetica";
-	}
-    else if (standard_fonts.count(font_name)==0) {
+    if (font_name == NULL)
+    {
+        font_name = "Helvetica";
+    }
+    else if (standard_fonts.count(font_name)==0)
+    {
         message(LOG, "'%s' is not a standard font, using Helvetica Font instead", font_name);
         font_name = "Helvetica";
     }
@@ -670,7 +752,8 @@ static void pdf_stream_prepend(PdfObject *stream, const char *str, int len)
 {
     char *new_stream = (char*) malloc(len + stream->stream->len);
     memcpy(new_stream, str, len);
-    if (stream->stream->len!=0) {
+    if (stream->stream->len!=0)
+    {
         memcpy(new_stream+len, stream->stream->stream, stream->stream->len);
         free(stream->stream->stream);
     }
@@ -697,39 +780,42 @@ static void pdf_stream_append(PdfObject *stream, const char *str, int len)
 static int
 stream_to_xobj (PdfObject *contents, PdfObject *page, Rect &bbox, ObjectTable &obj_table)
 {
-	PdfObject * xobj, *tmp, *pg_res, *xobj_res;
+    PdfObject * xobj, *tmp, *pg_res, *xobj_res;
 
-	while (isRef(contents)){
-		contents = obj_table.getObject(contents->indirect.major, contents->indirect.minor);
-	}
-	assert(isStream(contents));
+    while (isRef(contents))
+    {
+        contents = obj_table.getObject(contents->indirect.major, contents->indirect.minor);
+    }
+    assert(isStream(contents));
 
-	xobj = new PdfObject();
-	xobj->copyFrom(contents);
+    xobj = new PdfObject();
+    xobj->copyFrom(contents);
 
-	tmp = new PdfObject;
+    tmp = new PdfObject;
     tmp->readFromString("<< /Type /XObject /Subtype /Form /FormType 1 >>");
     bbox.setToObject(tmp->dict->newItem("BBox"));
     xobj->stream->dict.merge(tmp->dict);
     delete tmp;
     // copy page resources to xobject resources
-	pg_res = page->dict->get("Resources");
+    pg_res = page->dict->get("Resources");
 
-	if (pg_res!=NULL){
-		xobj_res = xobj->stream->dict.newItem("Resources");
+    if (pg_res!=NULL)
+    {
+        xobj_res = xobj->stream->dict.newItem("Resources");
 
-		switch(pg_res->type){
-		case PDF_OBJ_INDIRECT_REF:
-			pg_res = obj_table.getObject(pg_res->indirect.major, pg_res->indirect.minor);
-		case PDF_OBJ_DICT:
-			xobj_res->copyFrom(pg_res);
-			break;
-		default:
-			assert(0);
-		}
-	}
-	xobj->stream->dict.filter(xobject_filter);
-	return obj_table.addObject(xobj);
+        switch(pg_res->type)
+        {
+        case PDF_OBJ_INDIRECT_REF:
+            pg_res = obj_table.getObject(pg_res->indirect.major, pg_res->indirect.minor);
+        case PDF_OBJ_DICT:
+            xobj_res->copyFrom(pg_res);
+            break;
+        default:
+            assert(0);
+        }
+    }
+    xobj->stream->dict.filter(xobject_filter);
+    return obj_table.addObject(xobj);
 }
 
 /* first create a new page object, and add this to object table. get old page contents,
@@ -740,7 +826,7 @@ static void pdf_page_to_xobj (PdfPage *page)
     PdfDocument *doc = page->doc;
     int major;
     PdfObject *new_page, *new_page_contents, *new_page_xobject,
-                *contents, *cont, *pg, *xobj, *xobj_val;
+              *contents, *cont, *pg, *xobj, *xobj_val;
     char * xobjname;
     char * stream_content = NULL;
     static int revision = 1;
@@ -762,10 +848,12 @@ static void pdf_page_to_xobj (PdfPage *page)
     new_page_xobject = new_page->dict->get("Resources")->dict->get("XObject");
 
     cont = pg->dict->get("Contents");
-    while (isRef(cont)) {
+    while (isRef(cont))
+    {
         cont = doc->obj_table.getObject(cont->indirect.major,cont->indirect.minor);
     }
-    if (isStream(cont)){
+    if (isStream(cont))
+    {
         major = stream_to_xobj(cont, pg, page->bbox, doc->obj_table);
         asprintf(&xobjname, "xo%d", revision++);
         xobj_val = new_page_xobject->dict->newItem(xobjname);
@@ -777,10 +865,12 @@ static void pdf_page_to_xobj (PdfPage *page)
         asprintf(&stream_content,"q /%s Do Q", xobjname);
         free(xobjname);
     }
-    else if (isArray(cont)) {
+    else if (isArray(cont))
+    {
         // array contains indirect objects of streams. Join all streams
         // to create a single merged stream. create xobject from that stream
-        if (cont->array->count()==0){// if empty array, nothing to do
+        if (cont->array->count()==0) // if empty array, nothing to do
+        {
             goto empty_cont;
         }
         PdfObject *tmp_stream = NULL;
@@ -791,12 +881,13 @@ static void pdf_page_to_xobj (PdfPage *page)
         {
             PdfObject *obj = (*it);
             tmp_stream = doc->obj_table.getObject(obj->indirect.major, obj->indirect.minor);//decompressed stream
-            if (not tmp_stream->stream->decompress() ){
+            if (not tmp_stream->stream->decompress() )
+            {
                 message(FATAL, "I haven't filter for decompress stream");
             }
             pdf_stream_append(new_stream, " ", 1);
             pdf_stream_append(new_stream, tmp_stream->stream->stream,
-                                            tmp_stream->stream->len);
+                              tmp_stream->stream->len);
         }
         major = stream_to_xobj(new_stream, pg, page->bbox, doc->obj_table);
 
@@ -814,7 +905,8 @@ static void pdf_page_to_xobj (PdfPage *page)
         asprintf(&stream_content,"q /%s Do Q", xobjname);
         free(xobjname);
     }
-    else {
+    else
+    {
 empty_cont:
         asprintf(&stream_content, " ");
         message(WARN, "Page contents is neither stream nor array obj");
@@ -855,19 +947,19 @@ PdfPage:: pageSize()
 void
 PdfPage:: drawLine (Point begin, Point end, float width)
 {
-	PdfObject *page_obj, *cont;
-	char *cmd;
+    PdfObject *page_obj, *cont;
+    char *cmd;
 
-	asprintf(&cmd, "\nq %g w %g %g m %g %g l S Q", width, begin.x, begin.y, end.x, end.y);
+    asprintf(&cmd, "\nq %g w %g %g m %g %g l S Q", width, begin.x, begin.y, end.x, end.y);
     applyTransformation();
     // convert to xobject so that drawing commands can be appended
-	pdf_page_to_xobj(this);
-	page_obj = doc->obj_table.getObject(this->major, this->minor);
+    pdf_page_to_xobj(this);
+    page_obj = doc->obj_table.getObject(this->major, this->minor);
     // create new stream by joining page stream and line drawing commands
-	cont = page_obj->dict->get("Contents");
-	cont = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
-	pdf_stream_append(cont, cmd, strlen(cmd));
-	free(cmd);
+    cont = page_obj->dict->get("Contents");
+    cont = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    pdf_stream_append(cont, cmd, strlen(cmd));
+    free(cmd);
 }
 
 /* when used as resources, F is prepended before font name.
@@ -880,81 +972,82 @@ PdfPage:: drawLine (Point begin, Point end, float width)
 void
 PdfPage:: drawText (const char *text, Point &pos, int size, Font font)
 {
-	char *str;
-	PdfObject *font_obj, *page, *stream, *cont, *res, *font_dict;
+    char *str;
+    PdfObject *font_obj, *page, *stream, *cont, *res, *font_dict;
 
     applyTransformation();
-	pdf_page_to_xobj(this);
+    pdf_page_to_xobj(this);
     page = doc->obj_table.getObject(this->major, this->minor);
     // /Resources << /Font << /FHelvetica 4 0 R >> XObject <</xo1 5 0 R >> >>
-	res = page->dict->get("Resources");
-	font_dict = res->dict->get("Font");
-    if (not font_dict) {
+    res = page->dict->get("Resources");
+    font_dict = res->dict->get("Font");
+    if (not font_dict)
+    {
         font_dict = res->dict->newItem("Font");
         font_dict->setType(PDF_OBJ_DICT);
     }
-	asprintf(&str, "F%s", font.name);
-	font_obj = font_dict->dict->newItem(str);
+    asprintf(&str, "F%s", font.name);
+    font_obj = font_dict->dict->newItem(str);
     font_obj->setType(PDF_OBJ_INDIRECT_REF);
     font_obj->indirect.major = font.major;
     font_obj->indirect.minor = font.minor;
-	free(str);
+    free(str);
 
-	cont = page->dict->get("Contents");
-	stream = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    cont = page->dict->get("Contents");
+    stream = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
     // we dont want trailing zeros in a float, so we used %g instead of %f
-	asprintf(&str, "\nq BT /F%s %d Tf  %g %g Td  (%s) Tj ET Q", font.name, size, pos.x, pos.y, text);
-	pdf_stream_append(stream, str, strlen(str));
-	free(str);
+    asprintf(&str, "\nq BT /F%s %d Tf  %g %g Td  (%s) Tj ET Q", font.name, size, pos.x, pos.y, text);
+    pdf_stream_append(stream, str, strlen(str));
+    free(str);
 }
 
 void
 PdfPage:: crop (Rect box)
 {
-	PdfObject *page_obj, *cont;
-	char *cmd;
+    PdfObject *page_obj, *cont;
+    char *cmd;
 
-	asprintf(&cmd, "q %g %g %g %g re W n\n", box.left.x, box.left.y, box.right.x-box.left.x, box.right.y-box.left.y);
+    asprintf(&cmd, "q %g %g %g %g re W n\n", box.left.x, box.left.y, box.right.x-box.left.x, box.right.y-box.left.y);
     applyTransformation();
     // convert to xobject so that drawing commands can be appended
-	pdf_page_to_xobj(this);
-	page_obj = doc->obj_table.getObject(this->major, this->minor);
+    pdf_page_to_xobj(this);
+    page_obj = doc->obj_table.getObject(this->major, this->minor);
     // create new stream by joining page stream and crop commands
-	cont = page_obj->dict->get("Contents");
-	cont = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
-	pdf_stream_prepend(cont, cmd, strlen(cmd));
-	pdf_stream_append(cont, " Q", 2);
-	free(cmd);
+    cont = page_obj->dict->get("Contents");
+    cont = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    pdf_stream_prepend(cont, cmd, strlen(cmd));
+    pdf_stream_append(cont, " Q", 2);
+    free(cmd);
 }
 
 void
 PdfPage:: mergePage (PdfPage &p2)
 {
-	PdfObject *page1, *page2, *res1, *res2, *cont, *stream1, *stream2;
+    PdfObject *page1, *page2, *res1, *res2, *cont, *stream1, *stream2;
 
     applyTransformation();
     p2.applyTransformation();
-	pdf_page_to_xobj(this);
-	pdf_page_to_xobj(&p2);
+    pdf_page_to_xobj(this);
+    pdf_page_to_xobj(&p2);
 
-	page1 = doc->obj_table.getObject(this->major, this->minor);
-	page2 = doc->obj_table.getObject(p2.major, p2.minor);
+    page1 = doc->obj_table.getObject(this->major, this->minor);
+    page2 = doc->obj_table.getObject(p2.major, p2.minor);
     //page2->write(stdout);
     // pages has been already converted to xobject. So xobjects and fonts are the
     // only resources of page objects. No two different XObjects or Fonts have
     // same name. So we can merge the Resources dicts safely
-	res1 = page1->dict->get("Resources");
-	res2 = page2->dict->get("Resources");
+    res1 = page1->dict->get("Resources");
+    res2 = page2->dict->get("Resources");
     //res2->write(stdout);
     res1->dict->merge(res2->dict);
 
-	cont = page1->dict->get("Contents");
-	stream1 = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
-	cont = page2->dict->get("Contents");
-	stream2 = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    cont = page1->dict->get("Contents");
+    stream1 = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    cont = page2->dict->get("Contents");
+    stream2 = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
 
-	pdf_stream_append(stream1, " ", 1);
-	pdf_stream_append(stream1, stream2->stream->stream, stream2->stream->len);
+    pdf_stream_append(stream1, " ", 1);
+    pdf_stream_append(stream1, stream2->stream->stream, stream2->stream->len);
 }
 
 /* Apply the transformation matrix in PdfPage if the matrix is not unity matrix
@@ -963,28 +1056,30 @@ PdfPage:: mergePage (PdfPage &p2)
 void
 PdfPage:: applyTransformation()
 {
-    if (this->matrix.isIdentity()) {
+    if (this->matrix.isIdentity())
+    {
         return;
     }
-	PdfObject *page_obj, *stream;
-	char *str;
+    PdfObject *page_obj, *stream;
+    char *str;
 
-	page_obj = doc->obj_table.getObject(this->major, this->minor);
+    page_obj = doc->obj_table.getObject(this->major, this->minor);
 
-	stream = page_obj->dict->get("Contents");
-	stream = doc->obj_table.getObject(stream->indirect.major, stream->indirect.minor);
-	if (stream->stream->len==0){
-		return;
-	}
-	//asprintf(&str, "q %f %f %f %f %f %f cm\n",
-	asprintf(&str, "q %g %g %g %g %g %g cm\n",
-                    matrix.mat[0][0], matrix.mat[0][1],
-                    matrix.mat[1][0], matrix.mat[1][1],
-                    matrix.mat[2][0], matrix.mat[2][1]);
+    stream = page_obj->dict->get("Contents");
+    stream = doc->obj_table.getObject(stream->indirect.major, stream->indirect.minor);
+    if (stream->stream->len==0)
+    {
+        return;
+    }
+    //asprintf(&str, "q %f %f %f %f %f %f cm\n",
+    asprintf(&str, "q %g %g %g %g %g %g cm\n",
+             matrix.mat[0][0], matrix.mat[0][1],
+             matrix.mat[1][0], matrix.mat[1][1],
+             matrix.mat[2][0], matrix.mat[2][1]);
 
     pdf_stream_prepend(stream, str, strlen(str));
     pdf_stream_append(stream, " Q", 2);
-	free(str);
+    free(str);
 
     Matrix identity_matrix;
     this->matrix = identity_matrix;
@@ -996,9 +1091,9 @@ PdfPage:: transform (Matrix mat)
 {
     pdf_page_to_xobj(this);
     // transform page content
-	matrix.multiply(mat);
+    matrix.multiply(mat);
     // transform bounding box & paper
-	mat.transform(bbox);
-	mat.transform(paper);
+    mat.transform(bbox);
+    mat.transform(paper);
 }
 

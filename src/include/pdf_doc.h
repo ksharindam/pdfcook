@@ -6,7 +6,8 @@
 
 class PdfDocument;
 
-typedef struct {
+typedef struct
+{
     const char *name;
     int major;
     int minor;
@@ -21,9 +22,9 @@ public:
     Rect bbox;
     bool bbox_is_cropbox;
     Matrix matrix;
-	int major;// of Page Object
-	int minor;
-	bool compressed;// converted to xobject
+    int major;// of Page Object
+    int minor;
+    bool compressed;// converted to xobject
     PdfDocument *doc;
 
     PdfPage();
@@ -52,7 +53,8 @@ public:
     PageIter begin();
     PageIter end();
     // allows indexing operator
-    PdfPage& operator[] (int index) {
+    PdfPage& operator[] (int index)
+    {
         assert( index>=0 && index<(int)array.size() );
         return array[index];
     }

@@ -17,17 +17,18 @@ enum {UNDEF=0,CR,LF,CRLF};
 
 extern char lend_str[4][3];
 
-typedef struct {
-	FILE * f;
-	unsigned char * buf;
-	unsigned char * ptr;
-	unsigned char * end;
-	long pos;
-	int eof;
-	int column;
-	int row;
-	int lastc;
-	int scratch;
+typedef struct
+{
+    FILE * f;
+    unsigned char * buf;
+    unsigned char * ptr;
+    unsigned char * end;
+    long pos;
+    int eof;
+    int column;
+    int row;
+    int lastc;
+    int scratch;
 } MYFILE;
 
 MYFILE * myfopen(const char * filename, const char *mode);

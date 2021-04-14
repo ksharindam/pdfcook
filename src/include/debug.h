@@ -8,7 +8,8 @@
 extern int quiet_mode;
 
 /* message types */
-enum {
+enum
+{
     LOG,//only print message
     WARN,//print message with "warning : " prefix
     ERROR,//print message with "error : " prefix

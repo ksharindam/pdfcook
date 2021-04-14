@@ -10,11 +10,11 @@
 
 
 #ifndef HAVE_ASPRINTF
-	int asprintf(char **strp, const char *fmt, ...);
+int asprintf(char **strp, const char *fmt, ...);
 #endif
 
 // check if string s1 starts with s2
-#define starts(s1, s2)	(strncmp(s1,s2,strlen(s2)) == 0)
+#define starts(s1, s2)    (strncmp(s1,s2,strlen(s2)) == 0)
 
 #define MAX(a,b) ((a)>(b) ? (a):(b))
 #define MIN(a,b) ((a)<(b) ? (a):(b))
