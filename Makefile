@@ -28,8 +28,10 @@ OBJS = $(SOURCES:%.cpp=%.o)
 all: ${PNAME} ${PNAME}-static
 
 ${PLIBSO}: ${OBJSLIB}
-	$(AR) crs ${PLIBA} $^
 	$(CXX) ${CXXFLAGS} -shared -Wl,-soname,$@ $^ -o $@  ${LDFLAGS}
+
+${PLIBA}: ${OBJSLIB}
+	$(AR) crs $@ $^
 
 ${PNAME}: ${OBJS} ${PLIBSO}
 	$(CXX) ${CXXFLAGS} -o $@ $^ ${LDFLAGS}
