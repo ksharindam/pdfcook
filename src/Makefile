@@ -2,9 +2,9 @@
 CC = gcc
 CXX = g++
 CFLAGS = -Wall -O2
-#CXXFLAGS = -Wall -O2 -g -DDEBUG
-CXXFLAGS = -Wall -O2 -DDEBUG
+CXXFLAGS = -Wall -O2 -std=c++11 -DDEBUG
 INCLUDES =
+LFLAGS = -s
 LIBS = -lm -lz
 
 BUILD_DIR = ../build
@@ -12,7 +12,7 @@ SOURCES = $(wildcard *.cpp)
 OBJS = $(SOURCES:%.cpp=$(BUILD_DIR)/%.o)
 
 pdfcook: ${OBJS}
-	${CXX} -s -o $@ ${OBJS} ${LIBS}
+	${CXX} ${LFLAGS} -o $@ ${OBJS} ${LIBS}
 
 clean:
 	rm -f $(BUILD_DIR)/*.o pdfcook

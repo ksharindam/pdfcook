@@ -1,9 +1,9 @@
 /* This file is a part of pdfcook program, which is GNU GPLv2 licensed */
+#include "common.h"
 #include "pdf_objects.h"
 #include <cstring>
 #include <cassert>
 #include "debug.h"
-#include "common.h"
 #include "pdf_filters.h"
 
 // *********** ------------- Array Object ----------------- ***********
@@ -289,7 +289,7 @@ bool
 PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
 {
     uint stream_len = 0;
-    PdfObject *new_obj;
+    PdfObject *item_obj, *next_obj, *len_obj=NULL;
     std::map<std::string, PdfObject*>  new_dict;
     size_t fpos;
     Token tok;
@@ -366,66 +366,73 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             //this->str.type = last_tok->str.type;
             return true;
         case TOK_BDICT:// dictionary or stream obj
-            while (1) {
-                if (!last_tok->get(f) or last_tok->type!=TOK_NAME)// get key
-                    break;
-                std::string key(last_tok->name);
+            next_obj = new PdfObject();
+            next_obj->read(f, xref, last_tok);
+            // next_obj must be a name obj
+            while (next_obj->type==PDF_OBJ_NAME) {
+                std::string key(next_obj->name);
                 // get value of key
-                new_obj = new PdfObject();
-                if (not new_obj->read(f, xref, last_tok)){
-                    // now we can't further read, this should fail all its parent objects
-                    delete new_obj;
-                    if (this->type==PDF_OBJ_STREAM)// this will help deleting new_dict items
-                        this->stream->dict.setDict(new_dict);
-                    else {
-                        this->setType(PDF_OBJ_DICT);
-                        this->dict->setDict(new_dict);
+                item_obj = new PdfObject();
+                item_obj->read(f, xref, last_tok);
+                // next obj should be a name obj or TOK_EDICT
+                next_obj->clear();
+                next_obj->read(f, xref, last_tok);
+                // This part wont be required if some shitty pdf writers did not
+                // put space inside pdf name object. Here we are checking if next obj
+                // is a name obj, if not, read objs until we get a name obj, then save
+                // prev key and value (obj just before next name obj)
+                if ( item_obj->type==PDF_OBJ_UNKNOWN || next_obj->type!=PDF_OBJ_NAME ){
+                    // now, either we have reached dict end, or name obj is invalid
+                    while (last_tok->type!=TOK_EDICT) {
+                        // current name obj is invalid, find next name obj
+                        delete item_obj;
+                        item_obj = next_obj;
+                        next_obj = new PdfObject();
+                        next_obj->read(f, xref, last_tok);
+                        if (next_obj->type==PDF_OBJ_NAME/*|| last_tok->type==TOK_EOF*/)
+                            break;// TODO : replace space with #20 in name obj
                     }
-                    message(WARN,"Failed to get value of the key /%s", key.c_str());
-                    return false;
                 }
-                // if dict has /Length key then it is stream object
-                // if stream length is indirect obj, get length as integer
                 if (key == "Length"){
                     this->setType(PDF_OBJ_STREAM);
-                    switch (new_obj->type)
-                    {
-                    case PDF_OBJ_INT:
-                        stream_len = new_obj->integer;
-                        break;
-                    case PDF_OBJ_INDIRECT_REF:
-                        {
-                            fpos = myftell(f);
-                            xref->readObject(f, new_obj->indirect.major);
-                            PdfObject *ref_obj = xref->table[new_obj->indirect.major].obj;
-                            if (ref_obj->type == PDF_OBJ_INT) {
-                                stream_len = ref_obj->integer;
-                            }
-                            else {
-                                message(FATAL, "Stream length is not int");
-                            }
-                            myfseek(f, fpos, SEEK_SET);
-                        }
-                        break;
-                    default:
-                        message(WARN, "Can't read stream length of type %d", new_obj->type);
-                        return false;
-                    }
-                    delete new_obj;//as not adding it to dict
+                    len_obj = item_obj;
                 }
-                else // dont add Length key for stream, it will be added while writing to file
-                    new_dict[key] = new_obj;
+                else
+                    new_dict[key] = item_obj;
             }
-            if (last_tok->type!=TOK_EDICT){
-                message(WARN, "dictionary does not have end bracket");
-                return false;
-            }
-            if (this->type!=PDF_OBJ_STREAM) {
+            delete next_obj;
+            // if dict has /Length key then it is stream object
+            if (this->type != PDF_OBJ_STREAM) {
                 this->setType(PDF_OBJ_DICT);
                 this->dict->setDict(new_dict);
                 return true;
             }
             this->stream->dict.setDict(new_dict);
+            // if stream length is indirect obj, get length as integer
+            switch (len_obj->type)
+            {
+            case PDF_OBJ_INT:
+                stream_len = len_obj->integer;
+                break;
+            case PDF_OBJ_INDIRECT_REF:
+                {
+                    fpos = myftell(f);
+                    xref->readObject(f, len_obj->indirect.major);
+                    PdfObject *ref_obj = xref->table[len_obj->indirect.major].obj;
+                    if (ref_obj->type == PDF_OBJ_INT) {
+                        stream_len = ref_obj->integer;
+                    }
+                    else {
+                        message(FATAL, "Stream length is not int");
+                    }
+                    myfseek(f, fpos, SEEK_SET);
+                }
+                break;
+            default:
+                message(WARN, "Can't read stream length of type %d", len_obj->type);
+                return false;
+            }
+            delete len_obj;
             if ( (not last_tok->get(f))
                 || last_tok->type!=TOK_ID
                 || strcmp(last_tok->id, "stream")!=0) {
@@ -471,12 +478,12 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             return true;
         case TOK_BARRAY:
             this->setType(PDF_OBJ_ARRAY);
-            new_obj = new PdfObject();
-            while (new_obj->read(f,xref,last_tok)){
-                this->array->append(new_obj);
-                new_obj = new PdfObject();
+            item_obj = new PdfObject();
+            while (item_obj->read(f,xref,last_tok)){
+                this->array->append(item_obj);
+                item_obj = new PdfObject();
             }
-            delete new_obj;
+            delete item_obj;
             if (last_tok->type!=TOK_EARRAY){
                 message(WARN, "Array : ending bracket not found");
                 return false;
@@ -497,7 +504,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                 this->boolean = false;
                 return true;
             }
-            message(WARN,"unknown id '%s'",last_tok->id);
+            debug("unknown id '%s'", last_tok->id);
             return false;
         case TOK_EOF:
         case TOK_EARRAY:

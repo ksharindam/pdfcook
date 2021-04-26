@@ -1,7 +1,7 @@
 /* This file is a part of pdfcook program, which is GNU GPLv2 licensed */
+#include "common.h"
 #include "geometry.h"
 #include "debug.h"
-#include "common.h"
 
 static Point min_coordinate (Point p1, Point p2);
 static Point max_coordinate (Point p1, Point p2);
@@ -135,8 +135,8 @@ void Matrix:: scale (float scale)
 void Matrix:: rotate (float angle_deg)
 {
     // rounding off so that value of cos90 becomes zero instead of 6.12323e-17
-    float sinx = roundOff(sin((M_PI*angle_deg)/180.0));
-    float cosx = roundOff(cos((M_PI*angle_deg)/180.0));
+    float sinx = roundOff(sin((angle_deg*PI)/180.0));
+    float cosx = roundOff(cos((angle_deg*PI)/180.0));
 	Matrix matrix(cosx,-sinx,0, sinx,cosx,0, 0,0,1);// rotation along z axis
 	this->multiply(matrix);
 }

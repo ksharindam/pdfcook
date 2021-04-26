@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <string>
 #include "fileio.h"
 
 #define PDF_NAME_MAX_LEN 255

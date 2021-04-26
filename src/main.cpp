@@ -39,7 +39,7 @@ char pusage[][LLEN] = {
 
 static void print_help (FILE * stream, int exit_code)
 {
-	fprintf(stream, "pdfcook %s\n", PACKAGE_VERSION);
+	fprintf(stream, "pdfcook %s\n", PROG_VERSION);
 	for (size_t i = 0; i < sizeof(pusage) / LLEN; ++i){
 		fprintf(stream, "%s\n", pusage[i]);
 	}

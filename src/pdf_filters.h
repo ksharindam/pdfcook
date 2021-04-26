@@ -1,15 +1,14 @@
 #pragma once
 /* This file is a part of pdfcook program, which is GNU GPLv2 licensed */
-#include "pdf_objects.h"
 #include "common.h"
+#include "pdf_objects.h"
 
-#define HAVE_LZW 1
 
 int zlib_compress_filter(char **stream, size_t *len, DictObj &dict);
 int flate_decode_filter(char **stream, size_t *len, DictObj &dict);
 
 
-#ifdef HAVE_LZW
+#if (HAVE_LZW)
 	int lzw_decompress_filter(char **stream, size_t *len, DictObj &dict);
 	#define lzw_compress_filter NULL
 #else

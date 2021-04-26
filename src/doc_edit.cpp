@@ -1,7 +1,7 @@
 /* This file is a part of pdfcook program, which is GNU GPLv2 licensed */
+#include "common.h"
 #include "doc_edit.h"
 #include "debug.h"
-#include "common.h"
 #include <algorithm>// sort()
 
 PageRange:: PageRange () {

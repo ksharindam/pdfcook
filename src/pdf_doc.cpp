@@ -1,6 +1,6 @@
 /* This file is a part of pdfcook program, which is GNU GPLv2 licensed */
-#include "pdf_doc.h"
 #include "common.h"
+#include "pdf_doc.h"
 #include "debug.h"
 #include <set>
 

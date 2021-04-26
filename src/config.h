@@ -1,15 +1,10 @@
 #pragma once
 
-/* Define to the version of this package. */
-#define PACKAGE_VERSION "0.1"
+#define PROG_VERSION "0.2"
 
 
-
-/* Do we have zlib? */
-#define HAVE_ZLIB 1
-
-/* Do we want lzw? */
+/* Do we have LZW decompression lib */
 #define HAVE_LZW 1
 
+/* have asprintf() func */
 #define HAVE_ASPRINTF 1
-

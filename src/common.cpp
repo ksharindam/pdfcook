@@ -1,43 +1,6 @@
 /* This file is a part of pdfcook program, which is GNU GPLv2 licensed */
 #include "common.h"
 
-/*
-char * strtoupper(char * s){
-	char * S = s;
-	for(S=s;*S;++S){
-		*S=toupper(*S);
-	}
-	return s;
-}
-
-char * strlower(char * s){
-	char * S = s;
-	for(S=s;*S;++S){
-		*S=tolower(*S);
-	}
-	return s;
-}
-
-char * skipwhspaces(char * s){
-	while (isspace((int)(*s))){
-		++s;
-	}
-	return s;
-}
-
-int strint(char *what, char *from[]){
-	int i;
-	what = skipwhspaces(what);
-
-	for (i=0; *(from + i); ++i){
-		if (starts(what, from[i])){
-			return i;
-		}
-	}
-	return -1;
-}
-*/
-
 // read a big endian integer provided as char array
 int arr2int(char *arr, int len)
 {
@@ -50,7 +13,7 @@ int arr2int(char *arr, int len)
 }
 
 
-#ifndef HAVE_ASPRINTF
+#if (!HAVE_ASPRINTF)
 #include <stdarg.h>
 int asprintf(char **strp, const char *fmt, ...){
 	/* Guess we need no more than 100 bytes. */
