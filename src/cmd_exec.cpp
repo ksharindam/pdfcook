@@ -840,63 +840,56 @@ static int cmd_get_token(MYFILE * f, CmdToken * structure)
     int * column = &f->column;
     int * row = &f->row;
     int * lastc = &f->lastc;
-    int * next_token=&f->scratch;
-    if (*next_token!=CMD_TOK_UNKNOWN){
-        structure->token=*next_token;
-        set_poz(structure);
-        *next_token=CMD_TOK_UNKNOWN;
-        return 0;
-    }
+
     while ((c=mygetc(f))!=EOF){
         update_poz;
-        if(!isspace(c)){
+        if (!isspace(c)){
             break;
         }
     }
-
     set_poz(structure);
 
-    switch(c){
+    switch (c){
         case '{':
-            structure->token=CMD_TOK_LCPAR;
+            structure->token = CMD_TOK_LCPAR;
             return 0;
         case  '}':
-            structure->token=CMD_TOK_RCPAR;
+            structure->token = CMD_TOK_RCPAR;
             return 0;
         case '(':
-            structure->token=CMD_TOK_LPAR;
+            structure->token = CMD_TOK_LPAR;
             return 0;
         case ')':
-            structure->token=CMD_TOK_RPAR;
+            structure->token = CMD_TOK_RPAR;
             return 0;
         case ',':
-            structure->token=CMD_TOK_COMMA;
+            structure->token = CMD_TOK_COMMA;
             return 0;
         case '.':
             if (mygetc(f)=='.'){
                 update_poz;
-                structure->token=CMD_TOK_DOTDOT;
+                structure->token = CMD_TOK_DOTDOT;
                 return 0;
             }
-            structure->token=CMD_TOK_UNKNOWN;
+            structure->token = CMD_TOK_UNKNOWN;
             return -1;
         case '-':
-            structure->token=CMD_TOK_MINUS;
+            structure->token = CMD_TOK_MINUS;
             return 0;
         case '=':
-            structure->token=CMD_TOK_EQ;
+            structure->token = CMD_TOK_EQ;
             return 0;
         case '"':
             for(i=0,c=mygetc(f);c!=EOF && c!='"' && i<STR_MAX-1 ;c=mygetc(f),++i){
-                structure->str[i]=c;
+                structure->str[i] = c;
             }
-            structure->str[i]=0;
+            structure->str[i] = 0;
             if (c=='"'){
-                structure->token=CMD_TOK_STR;
+                structure->token = CMD_TOK_STR;
                 return 0;
             }
             else {
-                structure->token=CMD_TOK_UNKNOWN;
+                structure->token = CMD_TOK_UNKNOWN;
                 return -1;
             }
         case '0':
@@ -910,19 +903,18 @@ static int cmd_get_token(MYFILE * f, CmdToken * structure)
         case '8':
         case '9':
             structure->integer = c-'0';
-            structure->token=CMD_TOK_INT;
-            while((c=mygetc(f))!=EOF && isdigit(c)){
+            structure->token = CMD_TOK_INT;
+            while ((c=mygetc(f))!=EOF && isdigit(c)){
                 update_poz;
                 structure->integer = structure->integer * 10 + (c - '0');
             }
             if (c!='.'){
                 if (c!=EOF){
-                    //un_update_poz;
                     myungetc(f);
                 }
                 return 0;
             }
-            c=mygetc(f);
+            c = mygetc(f);
             update_poz;
             if (isdigit(c)){
                 long frac=10;
@@ -934,51 +926,46 @@ static int cmd_get_token(MYFILE * f, CmdToken * structure)
                     structure->real += ((double)(c - '0'))/frac;
                 }
                 if (c!=EOF){
-                    //un_update_poz;
                     myungetc(f);
                 }
                 return 0;
-            }else{
-                if (c=='.'){
-                    *next_token=CMD_TOK_DOTDOT;
-                    return 0;
-                }
-                structure->token=CMD_TOK_UNKNOWN;
-                return -1;
+            } else {
+                myungetc(f);
+                myungetc(f);
+                return 0;
             }
         case '$':
-            structure->token=CMD_TOK_DOLLAR;
+            structure->token = CMD_TOK_DOLLAR;
             structure->integer = -1;
             return 0;
         case '?':
-            structure->token=CMD_TOK_ODD;
+            structure->token = CMD_TOK_ODD;
             structure->integer = 0;
             return 0;
         case '+':
-            structure->token=CMD_TOK_EVEN;
+            structure->token = CMD_TOK_EVEN;
             structure->integer = 0;
             return 0;
         case EOF:
-            structure->token=CMD_TOK_EOF;
+            structure->token = CMD_TOK_EOF;
             return -1;
         default:
             if (isalpha(c)){
-                structure->str[0]=c;
+                structure->str[0] = c;
                 i=1;
                 while(i<STR_MAX-1 && (c=mygetc(f))!=EOF && (isalnum(c) || c=='.' || c=='_' || c=='-' || c=='/')){
                     update_poz;
-                    structure->str[i]=c;
+                    structure->str[i] = c;
                     ++i;
                 }
                 if (c!=EOF){
-                    // un_update_poz;
                     myungetc(f);
                 }
-                structure->str[i]=0;
-                structure->token=CMD_TOK_ID;
+                structure->str[i] = 0;
+                structure->token = CMD_TOK_ID;
                 return 0;
             }
-            structure->token=CMD_TOK_UNKNOWN;
+            structure->token = CMD_TOK_UNKNOWN;
             return -1;
     }
 }

@@ -52,7 +52,6 @@ MYFILE * streamopen(const char *str, size_t len){
 	}
 	f->row = 1;
 	f->column = 0;
-	f->scratch = 0;
 	f->lastc = 0;
 	f->buf=(unsigned char *)malloc(sizeof(unsigned char) * (len+1));
 	if (f->buf==NULL){

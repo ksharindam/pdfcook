@@ -27,7 +27,6 @@ typedef struct {
 	int column;
 	int row;
 	int lastc;
-	int scratch;
 } MYFILE;
 
 MYFILE * myfopen(const char * filename, const char *mode);
