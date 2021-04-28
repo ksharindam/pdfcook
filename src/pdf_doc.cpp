@@ -77,11 +77,11 @@ PdfDocument:: ~PdfDocument()
 bool PdfDocument:: getPdfHeader (MYFILE *f, char *line)
 {
     int major=1, minor=4;
-    long i;
+    char *s;
     // read until %PDF- or EOF is reached
-    while ( ((i=myfgets(line, LLEN, f, NULL))!=EOF) && (!starts(line, "%PDF-")) );
+    while ( (s=myfgets(line, LLEN, f))!=NULL && (!starts(line, "%PDF-")) );
 
-    if (i==EOF) return false;
+    if (s==NULL) return false;
     // get pdf version
     char *endptr;
     major = strtol(line+5, &endptr, 10);
@@ -422,25 +422,25 @@ bool PdfDocument:: save (const char *filename)
 void
 PdfDocument:: mergeDocument(PdfDocument &doc)
 {
-	int offset = obj_table.count();
+    int offset = obj_table.count();
     // new obj_table size is one less than size of the two tables.
     // because, we dont need to copy first item of the second obj_table.
-	obj_table.expandToFit(obj_table.count()+doc.obj_table.count()-1);
+    obj_table.expandToFit(obj_table.count()+doc.obj_table.count()-1);
 
-	for (int i=1; i<doc.obj_table.count(); ++i){
-		doc.obj_table[i].major = offset+i-1;
-		doc.obj_table[i].minor = 0;
-	}
-	updateRefs(doc);
+    for (int i=1; i<doc.obj_table.count(); ++i){
+        doc.obj_table[i].major = offset+i-1;
+        doc.obj_table[i].minor = 0;
+    }
+    updateRefs(doc);
 
     for (auto &page : doc.page_list) {
         page.doc = this;
         page_list.append(page);
     }
-	for (int i=1; i<doc.obj_table.count(); i++) {
+    for (int i=1; i<doc.obj_table.count(); i++) {
         ObjectTableItem item = doc.obj_table[i];
         obj_table[item.major] = item;
-	}
+    }
     doc.obj_table.table.clear();
 }
 
@@ -604,7 +604,7 @@ PdfDocument:: newBlankPage(int page_num)
         message(WARN, "newBlankPage() : invalid page num %d", page_num);
         return false;
     }
-	PdfObject *page, *content;
+    PdfObject *page, *content;
 
     page = new PdfObject();
     // to set this page as compressed=false, Resources dict must be present (even empty)
@@ -621,7 +621,7 @@ PdfDocument:: newBlankPage(int page_num)
     content->indirect.minor = obj_table[major].minor;
 
     major = obj_table.addObject(page);
-	PdfPage p_page;
+    PdfPage p_page;
     p_page.major = major;
     p_page.minor = obj_table[major].minor;
     p_page.compressed = false;
@@ -648,9 +648,9 @@ Font
 PdfDocument:: newFontObject(const char *font_name)
 {
     Font font;
-	if (font_name == NULL){
-		font_name = "Helvetica";
-	}
+    if (font_name == NULL){
+        font_name = "Helvetica";
+    }
     else if (standard_fonts.count(font_name)==0) {
         message(LOG, "'%s' is not a standard font, using Helvetica Font instead", font_name);
         font_name = "Helvetica";
@@ -697,39 +697,39 @@ static void pdf_stream_append(PdfObject *stream, const char *str, int len)
 static int
 stream_to_xobj (PdfObject *contents, PdfObject *page, Rect &bbox, ObjectTable &obj_table)
 {
-	PdfObject * xobj, *tmp, *pg_res, *xobj_res;
+    PdfObject * xobj, *tmp, *pg_res, *xobj_res;
 
-	while (isRef(contents)){
-		contents = obj_table.getObject(contents->indirect.major, contents->indirect.minor);
-	}
-	assert(isStream(contents));
+    while (isRef(contents)){
+        contents = obj_table.getObject(contents->indirect.major, contents->indirect.minor);
+    }
+    assert(isStream(contents));
 
-	xobj = new PdfObject();
-	xobj->copyFrom(contents);
+    xobj = new PdfObject();
+    xobj->copyFrom(contents);
 
-	tmp = new PdfObject;
+    tmp = new PdfObject;
     tmp->readFromString("<< /Type /XObject /Subtype /Form /FormType 1 >>");
     bbox.setToObject(tmp->dict->newItem("BBox"));
     xobj->stream->dict.merge(tmp->dict);
     delete tmp;
     // copy page resources to xobject resources
-	pg_res = page->dict->get("Resources");
+    pg_res = page->dict->get("Resources");
 
-	if (pg_res!=NULL){
-		xobj_res = xobj->stream->dict.newItem("Resources");
+    if (pg_res!=NULL){
+        xobj_res = xobj->stream->dict.newItem("Resources");
 
-		switch(pg_res->type){
-		case PDF_OBJ_INDIRECT_REF:
-			pg_res = obj_table.getObject(pg_res->indirect.major, pg_res->indirect.minor);
-		case PDF_OBJ_DICT:
-			xobj_res->copyFrom(pg_res);
-			break;
-		default:
-			assert(0);
-		}
-	}
-	xobj->stream->dict.filter(xobject_filter);
-	return obj_table.addObject(xobj);
+        switch(pg_res->type){
+        case PDF_OBJ_INDIRECT_REF:
+            pg_res = obj_table.getObject(pg_res->indirect.major, pg_res->indirect.minor);
+        case PDF_OBJ_DICT:
+            xobj_res->copyFrom(pg_res);
+            break;
+        default:
+            assert(0);
+        }
+    }
+    xobj->stream->dict.filter(xobject_filter);
+    return obj_table.addObject(xobj);
 }
 
 /* first create a new page object, and add this to object table. get old page contents,
@@ -855,19 +855,19 @@ PdfPage:: pageSize()
 void
 PdfPage:: drawLine (Point begin, Point end, float width)
 {
-	PdfObject *page_obj, *cont;
-	char *cmd;
+    PdfObject *page_obj, *cont;
+    char *cmd;
 
-	asprintf(&cmd, "\nq %g w %g %g m %g %g l S Q", width, begin.x, begin.y, end.x, end.y);
+    asprintf(&cmd, "\nq %g w %g %g m %g %g l S Q", width, begin.x, begin.y, end.x, end.y);
     applyTransformation();
     // convert to xobject so that drawing commands can be appended
-	pdf_page_to_xobj(this);
-	page_obj = doc->obj_table.getObject(this->major, this->minor);
+    pdf_page_to_xobj(this);
+    page_obj = doc->obj_table.getObject(this->major, this->minor);
     // create new stream by joining page stream and line drawing commands
-	cont = page_obj->dict->get("Contents");
-	cont = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
-	pdf_stream_append(cont, cmd, strlen(cmd));
-	free(cmd);
+    cont = page_obj->dict->get("Contents");
+    cont = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    pdf_stream_append(cont, cmd, strlen(cmd));
+    free(cmd);
 }
 
 /* when used as resources, F is prepended before font name.
@@ -880,81 +880,81 @@ PdfPage:: drawLine (Point begin, Point end, float width)
 void
 PdfPage:: drawText (const char *text, Point &pos, int size, Font font)
 {
-	char *str;
-	PdfObject *font_obj, *page, *stream, *cont, *res, *font_dict;
+    char *str;
+    PdfObject *font_obj, *page, *stream, *cont, *res, *font_dict;
 
     applyTransformation();
-	pdf_page_to_xobj(this);
+    pdf_page_to_xobj(this);
     page = doc->obj_table.getObject(this->major, this->minor);
     // /Resources << /Font << /FHelvetica 4 0 R >> XObject <</xo1 5 0 R >> >>
-	res = page->dict->get("Resources");
-	font_dict = res->dict->get("Font");
+    res = page->dict->get("Resources");
+    font_dict = res->dict->get("Font");
     if (not font_dict) {
         font_dict = res->dict->newItem("Font");
         font_dict->setType(PDF_OBJ_DICT);
     }
-	asprintf(&str, "F%s", font.name);
-	font_obj = font_dict->dict->newItem(str);
+    asprintf(&str, "F%s", font.name);
+    font_obj = font_dict->dict->newItem(str);
     font_obj->setType(PDF_OBJ_INDIRECT_REF);
     font_obj->indirect.major = font.major;
     font_obj->indirect.minor = font.minor;
-	free(str);
+    free(str);
 
-	cont = page->dict->get("Contents");
-	stream = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    cont = page->dict->get("Contents");
+    stream = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
     // we dont want trailing zeros in a float, so we used %g instead of %f
-	asprintf(&str, "\nq BT /F%s %d Tf  %g %g Td  (%s) Tj ET Q", font.name, size, pos.x, pos.y, text);
-	pdf_stream_append(stream, str, strlen(str));
-	free(str);
+    asprintf(&str, "\nq BT /F%s %d Tf  %g %g Td  (%s) Tj ET Q", font.name, size, pos.x, pos.y, text);
+    pdf_stream_append(stream, str, strlen(str));
+    free(str);
 }
 
 void
 PdfPage:: crop (Rect box)
 {
-	PdfObject *page_obj, *cont;
-	char *cmd;
+    PdfObject *page_obj, *cont;
+    char *cmd;
 
-	asprintf(&cmd, "q %g %g %g %g re W n\n", box.left.x, box.left.y, box.right.x-box.left.x, box.right.y-box.left.y);
+    asprintf(&cmd, "q %g %g %g %g re W n\n", box.left.x, box.left.y, box.right.x-box.left.x, box.right.y-box.left.y);
     applyTransformation();
     // convert to xobject so that drawing commands can be appended
-	pdf_page_to_xobj(this);
-	page_obj = doc->obj_table.getObject(this->major, this->minor);
+    pdf_page_to_xobj(this);
+    page_obj = doc->obj_table.getObject(this->major, this->minor);
     // create new stream by joining page stream and crop commands
-	cont = page_obj->dict->get("Contents");
-	cont = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
-	pdf_stream_prepend(cont, cmd, strlen(cmd));
-	pdf_stream_append(cont, " Q", 2);
-	free(cmd);
+    cont = page_obj->dict->get("Contents");
+    cont = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    pdf_stream_prepend(cont, cmd, strlen(cmd));
+    pdf_stream_append(cont, " Q", 2);
+    free(cmd);
 }
 
 void
 PdfPage:: mergePage (PdfPage &p2)
 {
-	PdfObject *page1, *page2, *res1, *res2, *cont, *stream1, *stream2;
+    PdfObject *page1, *page2, *res1, *res2, *cont, *stream1, *stream2;
 
     applyTransformation();
     p2.applyTransformation();
-	pdf_page_to_xobj(this);
-	pdf_page_to_xobj(&p2);
+    pdf_page_to_xobj(this);
+    pdf_page_to_xobj(&p2);
 
-	page1 = doc->obj_table.getObject(this->major, this->minor);
-	page2 = doc->obj_table.getObject(p2.major, p2.minor);
+    page1 = doc->obj_table.getObject(this->major, this->minor);
+    page2 = doc->obj_table.getObject(p2.major, p2.minor);
     //page2->write(stdout);
     // pages has been already converted to xobject. So xobjects and fonts are the
     // only resources of page objects. No two different XObjects or Fonts have
     // same name. So we can merge the Resources dicts safely
-	res1 = page1->dict->get("Resources");
-	res2 = page2->dict->get("Resources");
+    res1 = page1->dict->get("Resources");
+    res2 = page2->dict->get("Resources");
     //res2->write(stdout);
     res1->dict->merge(res2->dict);
 
-	cont = page1->dict->get("Contents");
-	stream1 = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
-	cont = page2->dict->get("Contents");
-	stream2 = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    cont = page1->dict->get("Contents");
+    stream1 = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
+    cont = page2->dict->get("Contents");
+    stream2 = doc->obj_table.getObject(cont->indirect.major, cont->indirect.minor);
 
-	pdf_stream_append(stream1, " ", 1);
-	pdf_stream_append(stream1, stream2->stream->stream, stream2->stream->len);
+    pdf_stream_append(stream1, " ", 1);
+    pdf_stream_append(stream1, stream2->stream->stream, stream2->stream->len);
 }
 
 /* Apply the transformation matrix in PdfPage if the matrix is not unity matrix
@@ -966,25 +966,25 @@ PdfPage:: applyTransformation()
     if (this->matrix.isIdentity()) {
         return;
     }
-	PdfObject *page_obj, *stream;
-	char *str;
+    PdfObject *page_obj, *stream;
+    char *str;
 
-	page_obj = doc->obj_table.getObject(this->major, this->minor);
+    page_obj = doc->obj_table.getObject(this->major, this->minor);
 
-	stream = page_obj->dict->get("Contents");
-	stream = doc->obj_table.getObject(stream->indirect.major, stream->indirect.minor);
-	if (stream->stream->len==0){
-		return;
-	}
-	//asprintf(&str, "q %f %f %f %f %f %f cm\n",
-	asprintf(&str, "q %g %g %g %g %g %g cm\n",
+    stream = page_obj->dict->get("Contents");
+    stream = doc->obj_table.getObject(stream->indirect.major, stream->indirect.minor);
+    if (stream->stream->len==0){
+        return;
+    }
+    //asprintf(&str, "q %f %f %f %f %f %f cm\n",
+    asprintf(&str, "q %g %g %g %g %g %g cm\n",
                     matrix.mat[0][0], matrix.mat[0][1],
                     matrix.mat[1][0], matrix.mat[1][1],
                     matrix.mat[2][0], matrix.mat[2][1]);
 
     pdf_stream_prepend(stream, str, strlen(str));
     pdf_stream_append(stream, " Q", 2);
-	free(str);
+    free(str);
 
     Matrix identity_matrix;
     this->matrix = identity_matrix;
@@ -996,9 +996,9 @@ PdfPage:: transform (Matrix mat)
 {
     pdf_page_to_xobj(this);
     // transform page content
-	matrix.multiply(mat);
+    matrix.multiply(mat);
     // transform bounding box & paper
-	mat.transform(bbox);
-	mat.transform(paper);
+    mat.transform(bbox);
+    mat.transform(paper);
 }
 

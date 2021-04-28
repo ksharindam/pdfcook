@@ -227,23 +227,23 @@ static cmd_entry cmd_commands[] = {
     {"del",     "Delete pages, must add page ranges", cmd_del, NULL,0},
     {"select",  "Select pages to save", cmd_select, NULL,0},
     {"modulo",  "Advanced Select pages (see manual page)",cmd_modulo,fill_params(cmd_modulo_params)},
-	{"nup",     "Print n pages per page", cmd_nup, fill_params(cmd_nup_params)},
-	{"book",    "Arrage pages for printing booklets", cmd_book, NULL,0},
-	{"crop",    "make outside area blank white", cmd_crop, fill_params(cmd_crop_params)},
-	{"crop2",   "Crop with exact size", cmd_crop2, fill_params(cmd_crop2_params)},
-	{"flip",    "horizontal | vertical (v|h)", cmd_flip, fill_params(cmd_flip_params)},
-	{"line",    "Draw line on page", cmd_line, fill_params(cmd_line_params)},
-	{"matrix",  "Transform by matrix", cmd_matrix, fill_params(cmd_matrix_params)},
-	{"move",    "Move or translate page by x and y points",cmd_move,fill_params(cmd_move_params)},
+    {"nup",     "Print n pages per page", cmd_nup, fill_params(cmd_nup_params)},
+    {"book",    "Arrage pages for printing booklets", cmd_book, NULL,0},
+    {"crop",    "make outside area blank white", cmd_crop, fill_params(cmd_crop_params)},
+    {"crop2",   "Crop with exact size", cmd_crop2, fill_params(cmd_crop2_params)},
+    {"flip",    "horizontal | vertical (v|h)", cmd_flip, fill_params(cmd_flip_params)},
+    {"line",    "Draw line on page", cmd_line, fill_params(cmd_line_params)},
+    {"matrix",  "Transform by matrix", cmd_matrix, fill_params(cmd_matrix_params)},
+    {"move",    "Move or translate page by x and y points",cmd_move,fill_params(cmd_move_params)},
     {"number",  "Add page numbers", cmd_number, fill_params(cmd_number_params)},
-	{"paper",   "Set paper size (doesn't scale contents)", cmd_paper, fill_params(cmd_paper_params)},
-	{"paper2",  "Set exact paper size", cmd_paper2, fill_params(cmd_paper2_params)},
-	{"rotate",  "Rotate pages", cmd_rotate, fill_params(cmd_rotate_params)},
+    {"paper",   "Set paper size (doesn't scale contents)", cmd_paper, fill_params(cmd_paper_params)},
+    {"paper2",  "Set exact paper size", cmd_paper2, fill_params(cmd_paper2_params)},
+    {"rotate",  "Rotate pages", cmd_rotate, fill_params(cmd_rotate_params)},
     {"scale",   "Scale pages by factor", cmd_scale, fill_params(cmd_scale_params)},
     {"scaleto", "Scale pages by standard paper sizes", cmd_scaleto, fill_params(cmd_scaleto_params)},
-	{"scaleto2","Scale to exact width and height", cmd_scaleto2, fill_params(cmd_scaleto2_params)},
-	{"spaper",  "Define new paper format", cmd_spaper, fill_params(cmd_spaper_params)},
-	{"text",    "Write text on page", cmd_text, fill_params(cmd_text_params)},
+    {"scaleto2","Scale to exact width and height", cmd_scaleto2, fill_params(cmd_scaleto2_params)},
+    {"spaper",  "Define new paper format", cmd_spaper, fill_params(cmd_spaper_params)},
+    {"text",    "Write text on page", cmd_text, fill_params(cmd_text_params)},
     {"read",    "Append file at the end (join pdfs)",cmd_read,fill_params(cmd_read_params)},
     {"write",   "Save to file", cmd_write, fill_params(cmd_write_params)},
     {NULL, NULL, 0}
@@ -280,12 +280,12 @@ typedef struct {
 } id_str;
 
 id_str ids_orient[] = {
-	{"portrait", ORIENT_PORTRAIT},
-	{"landscape", ORIENT_LANDSCAPE},
-	{"vertical", ORIENT_LANDSCAPE},
-	{"horizontal", ORIENT_PORTRAIT},
-	{"v", ORIENT_LANDSCAPE},
-	{"h", ORIENT_PORTRAIT}
+    {"portrait", ORIENT_PORTRAIT},
+    {"landscape", ORIENT_LANDSCAPE},
+    {"vertical", ORIENT_LANDSCAPE},
+    {"horizontal", ORIENT_PORTRAIT},
+    {"v", ORIENT_LANDSCAPE},
+    {"h", ORIENT_PORTRAIT}
 };
 
 #define get_ids_len(a) (sizeof((a))/sizeof(id_str))
@@ -293,11 +293,11 @@ id_str ids_orient[] = {
 static int str_to_id(const char *str, id_str ids[], size_t len)
 {
     if (str==NULL) return -1;
-	uint i;
-	for (i=0; i<len && strcmp(str, ids[i].str); ++i);
-	if (i==len){
-		return -1;
-	}
+    uint i;
+    for (i=0; i<len && strcmp(str, ids[i].str); ++i);
+    if (i==len){
+        return -1;
+    }
     return ids[i].id;
 }
 
@@ -1058,26 +1058,26 @@ static bool cmd_modulo(PdfDocument &doc, Param params[], PageRanges &pages)
 
 static bool cmd_nup (PdfDocument &doc, Param params[], PageRanges &pages)
 {
-	int n, rows, cols, row, col;
-	double dx, dy, margin_x, margin_y;
+    int n, rows, cols, row, col;
+    double dx, dy, margin_x, margin_y;
     float scale, scale_x, scale_y, scaled_page_w, scaled_page_h,
             cell_x, cell_y, move_x, move_y;
-	Rect paper;// size of new paper
+    Rect paper;// size of new paper
 
-	n = params[0].integer;
-	cols = params[1].integer;
+    n = params[0].integer;
+    cols = params[1].integer;
     rows = n/cols + (n%cols ? 1 : 0);
-	dx = params[2].real;
-	dy = params[3].real;
+    dx = params[2].real;
+    dy = params[3].real;
     margin_x = dx;
     margin_y = dy;
-	const char *paper_format = params[4].str;
+    const char *paper_format = params[4].str;
     // get paper size and orientation
     Orientation orientation = orientation_from_str(params[5].str);
     if (not set_paper_from_name(paper, paper_format, ORIENT_AUTO)) {
         message(WARN, "%s is unknown paper format", paper_format);
         return false;
-	}
+    }
     // calc paper orientation
     if (orientation == ORIENT_AUTO) {
         if (cols>rows || (cols==rows && doc.page_list[0].paper.isLandscape())) {
@@ -1155,12 +1155,12 @@ static bool cmd_book (PdfDocument &doc, Param params[], PageRanges &pages)
 static bool cmd_crop (PdfDocument &doc, Param params[], PageRanges &pages)
 {
     Orientation orientation = orientation_from_str(params[1].str);
-	Rect paper;
-	if (not set_paper_from_name(paper, params[0].str, orientation)){
-		message(ERROR, "'%s' is unknown paper size", params[0].str);
+    Rect paper;
+    if (not set_paper_from_name(paper, params[0].str, orientation)){
+        message(ERROR, "'%s' is unknown paper size", params[0].str);
         return false;
-	}
-	return doc_pages_crop(doc, pages, paper);
+    }
+    return doc_pages_crop(doc, pages, paper);
 }
 
 static bool cmd_crop2 (PdfDocument &doc, Param params[], PageRanges &pages)
@@ -1176,36 +1176,36 @@ static bool cmd_matrix (PdfDocument &doc, Param params[], PageRanges &pages)
     Matrix matrix(params[0].real, params[1].real, 0,
                   params[2].real, params[3].real, 0,
                   params[4].real, params[5].real, 1);
-	return doc_pages_transform(doc, pages, matrix);
+    return doc_pages_transform(doc, pages, matrix);
 }
 
 static bool cmd_scale (PdfDocument &doc, Param params[], PageRanges &pages)
 {
     Matrix scale_matrix;
-	scale_matrix.scale(params[0].real);
-	doc_pages_transform(doc, pages, scale_matrix);
-	return true;
+    scale_matrix.scale(params[0].real);
+    doc_pages_transform(doc, pages, scale_matrix);
+    return true;
 }
 
 // scaleto (str paper, float margin_top, margin_right, margin_bottom, margin_left)
 static bool cmd_scaleto (PdfDocument &doc, Param params[], PageRanges &pages)
 {
     Orientation orientation = orientation_from_str(params[5].str);
-	Rect paper;
-	if (not set_paper_from_name(paper, params[0].str, orientation)){
-		message(ERROR, "'%s' is unknown paper size", params[0].str);
+    Rect paper;
+    if (not set_paper_from_name(paper, params[0].str, orientation)){
+        message(ERROR, "'%s' is unknown paper size", params[0].str);
         return false;
-	}
-	doc_pages_scaleto(doc, pages, paper, params[1].real, params[2].real, params[3].real, params[4].real);
-	return true;
+    }
+    doc_pages_scaleto(doc, pages, paper, params[1].real, params[2].real, params[3].real, params[4].real);
+    return true;
 }
 
 // scaleto2(width, height, margin_top, right, bottom, left)
 static bool cmd_scaleto2 (PdfDocument &doc, Param params[], PageRanges &pages)
 {
-	Rect paper;
+    Rect paper;
     paper.right = Point(params[0].real, params[1].real);
-	return doc_pages_scaleto(doc, pages, paper, params[2].real, params[3].real, params[4].real, params[5].real);
+    return doc_pages_scaleto(doc, pages, paper, params[2].real, params[3].real, params[4].real, params[5].real);
 }
 
 static bool cmd_rotate (PdfDocument &doc, Param params[], PageRanges &pages)
@@ -1215,42 +1215,42 @@ static bool cmd_rotate (PdfDocument &doc, Param params[], PageRanges &pages)
         message(ERROR, "rotation angle must be multiple of 90");
         return false;
     }
-	angle %= 360;
+    angle %= 360;
 
     Matrix rot_matrix;
     rot_matrix.rotate(angle);
 
-	for (int page_num : pages){
+    for (int page_num : pages){
         PdfPage &page = doc.page_list[page_num-1];
         Rect page_size = page.pageSize();
-	    Matrix matrix = rot_matrix;
-	    w = page_size.right.x;
-	    h = page_size.right.y;
-	    switch (angle){
-		    case 90:
-			    matrix.translate(0, w);
-			    break;
-		    case 180:
-			    matrix.translate(w, h);
-			    break;
-		    case 270:
-			    matrix.translate(h, 0);
-			    break;
-	    }
+        Matrix matrix = rot_matrix;
+        w = page_size.right.x;
+        h = page_size.right.y;
+        switch (angle){
+            case 90:
+                matrix.translate(0, w);
+                break;
+            case 180:
+                matrix.translate(w, h);
+                break;
+            case 270:
+                matrix.translate(h, 0);
+                break;
+        }
         page.transform(matrix);
-	}
+    }
     return true;
 }
 
 // flip(id mode)
 static bool cmd_flip (PdfDocument &doc, Param params[], PageRanges &pages)
 {
-	int mode = str_to_id(params[0].str, ids_orient, get_ids_len(ids_orient));
+    int mode = str_to_id(params[0].str, ids_orient, get_ids_len(ids_orient));
 
-	for (int page_num : pages){
+    for (int page_num : pages){
         PdfPage &page = doc.page_list[page_num-1];
         Rect page_size = page.pageSize();
-	    Matrix matrix;
+        Matrix matrix;
         switch (mode) {
             case ORIENT_LANDSCAPE:// rotate 180 deg along x axis (vertically)
                 matrix.mat[1][1] = -1;
@@ -1265,7 +1265,7 @@ static bool cmd_flip (PdfDocument &doc, Param params[], PageRanges &pages)
                 return false;
         }
         page.transform(matrix);
-	}
+    }
     return true;
 }
 
@@ -1290,7 +1290,7 @@ static bool cmd_text (PdfDocument &doc, Param params[], PageRanges &pages)
 
 static bool cmd_line (PdfDocument &doc, Param params[], PageRanges &pages)
 {
-	for (int page_num : pages){
+    for (int page_num : pages){
         PdfPage &page = doc.page_list[page_num-1];
         page.drawLine(Point(params[0].real, params[1].real),
                       Point(params[2].real, params[3].real), params[4].real);
@@ -1301,29 +1301,29 @@ static bool cmd_line (PdfDocument &doc, Param params[], PageRanges &pages)
 static bool cmd_paper (PdfDocument &doc, Param params[], PageRanges &pages)
 {
     Orientation orientation = orientation_from_str(params[1].str);
-	Rect paper;
-	if (not set_paper_from_name(paper, params[0].str, orientation)){
-		message(ERROR, "'%s' is unknown paper size", params[0].str);
+    Rect paper;
+    if (not set_paper_from_name(paper, params[0].str, orientation)){
+        message(ERROR, "'%s' is unknown paper size", params[0].str);
         return false;
-	}
-	return doc_pages_set_paper_size(doc, pages, paper);
+    }
+    return doc_pages_set_paper_size(doc, pages, paper);
 }
 
 static bool cmd_paper2 (PdfDocument &doc, Param params[], PageRanges &pages)
 {
-	Rect paper;
+    Rect paper;
     paper.right = Point(params[0].real, params[1].real);
-	return doc_pages_set_paper_size(doc, pages, paper);
+    return doc_pages_set_paper_size(doc, pages, paper);
 }
 
 static bool cmd_spaper (PdfDocument &doc, Param params[], PageRanges &pages)
 {
-	return add_new_paper_size(params[0].str, params[1].real, params[2].real);
+    return add_new_paper_size(params[0].str, params[1].real, params[2].real);
 }
 
 static bool cmd_pinfo (PdfDocument &doc, Param params[], PageRanges &pages)
 {
-	for (int page_num : pages){
+    for (int page_num : pages){
         PdfPage &page = doc.page_list[page_num-1];
         const char *bbox_type = page.bbox_is_cropbox ? "CropBox" : "TrimBox";
         printf("%d\n", page_num);
@@ -1335,78 +1335,78 @@ static bool cmd_pinfo (PdfDocument &doc, Param params[], PageRanges &pages)
 
 void print_cmd_info(FILE *f)
 {
-	for (int i=0; cmd_commands[i].help!=NULL; ++i)
+    for (int i=0; cmd_commands[i].help!=NULL; ++i)
     {
         // print command name
-		fprintf(f, "%s", cmd_commands[i].name);
+        fprintf(f, "%s", cmd_commands[i].name);
         // print command args within bracket
-		if (cmd_commands[i].params_count) {
+        if (cmd_commands[i].params_count) {
             fprintf(f,"(");
-			for (int j=0; j<cmd_commands[i].params_count || (fprintf(f,")"),0); ++j){
+            for (int j=0; j<cmd_commands[i].params_count || (fprintf(f,")"),0); ++j){
                 //print param name and the = sign
-				fprintf(f, "%s=", cmd_commands[i].params[j].name);
-				switch (cmd_commands[i].params[j].type){
-					case CMD_TOK_INT:
-						if (cmd_commands[i].params[j].val_type==CMD_TOK_INT){
-							fprintf(f, "%ld", cmd_commands[i].params[j].integer);
-						}
-						else {
-							fprintf(f, "<int>");
-						}
-						break;
-					case CMD_TOK_REAL:
-						if (cmd_commands[i].params[j].val_type==CMD_TOK_REAL){
-							fprintf(f, "%.1f", cmd_commands[i].params[j].real);
-						}
-						else {
-							fprintf(f,"<real>");
-						}
-						break;
-					case CMD_TOK_ID:
-						if (cmd_commands[i].params[j].val_type==CMD_TOK_ID){
-							if (cmd_commands[i].params[j].str){
-								fprintf(f, "%s", cmd_commands[i].params[j].str);
-							}
-							else{
-								fprintf(f, "auto");
-							}
-						}
-						else {
-							fprintf(f, "<id>");
-						}
-						break;
-					case CMD_TOK_STR:
-						if (cmd_commands[i].params[j].val_type==CMD_TOK_STR){
-							if (cmd_commands[i].params[j].str){
-								fprintf(f, "\"%s\"", cmd_commands[i].params[j].str);
-							}
-							else {
-								fprintf(f, "\"auto\"");
-							}
-						}
-						else{
-							fprintf(f, "<str>");
-						}
-						break;
-					case CMD_TOK_MEASURE:
-						if (cmd_commands[i].params[j].val_type==CMD_TOK_MEASURE){
-							fprintf(f, "%g pt", cmd_commands[i].params[j].real);
-						}
-						else {
-							fprintf(f, "<measure>");
-						}
-						break;
-					default:
-						assert(0);
-						break;
-				}
+                fprintf(f, "%s=", cmd_commands[i].params[j].name);
+                switch (cmd_commands[i].params[j].type){
+                    case CMD_TOK_INT:
+                        if (cmd_commands[i].params[j].val_type==CMD_TOK_INT){
+                            fprintf(f, "%ld", cmd_commands[i].params[j].integer);
+                        }
+                        else {
+                            fprintf(f, "<int>");
+                        }
+                        break;
+                    case CMD_TOK_REAL:
+                        if (cmd_commands[i].params[j].val_type==CMD_TOK_REAL){
+                            fprintf(f, "%.1f", cmd_commands[i].params[j].real);
+                        }
+                        else {
+                            fprintf(f,"<real>");
+                        }
+                        break;
+                    case CMD_TOK_ID:
+                        if (cmd_commands[i].params[j].val_type==CMD_TOK_ID){
+                            if (cmd_commands[i].params[j].str){
+                                fprintf(f, "%s", cmd_commands[i].params[j].str);
+                            }
+                            else{
+                                fprintf(f, "auto");
+                            }
+                        }
+                        else {
+                            fprintf(f, "<id>");
+                        }
+                        break;
+                    case CMD_TOK_STR:
+                        if (cmd_commands[i].params[j].val_type==CMD_TOK_STR){
+                            if (cmd_commands[i].params[j].str){
+                                fprintf(f, "\"%s\"", cmd_commands[i].params[j].str);
+                            }
+                            else {
+                                fprintf(f, "\"auto\"");
+                            }
+                        }
+                        else{
+                            fprintf(f, "<str>");
+                        }
+                        break;
+                    case CMD_TOK_MEASURE:
+                        if (cmd_commands[i].params[j].val_type==CMD_TOK_MEASURE){
+                            fprintf(f, "%g pt", cmd_commands[i].params[j].real);
+                        }
+                        else {
+                            fprintf(f, "<measure>");
+                        }
+                        break;
+                    default:
+                        assert(0);
+                        break;
+                }
                 if (j < cmd_commands[i].params_count-1 )
                     fprintf(f, ",");// put a comma before next arg
-			}
-		}
-		/*if (cmd_commands[i].pages){
-			fprintf(f,"{page_ranges}");
-		}*/
-		fprintf(f, "\n                  %s\n", (cmd_commands[i].help) && strlen(cmd_commands[i].help)  ? (cmd_commands[i].help) : ("missing"));
-	}
+            }
+        }
+        /*if (cmd_commands[i].pages){
+            fprintf(f,"{page_ranges}");
+        }*/
+        fprintf(f, "\n                  %s\n", (cmd_commands[i].help) && strlen(cmd_commands[i].help)  ? (cmd_commands[i].help) : ("missing"));
+    }
 }

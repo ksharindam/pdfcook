@@ -144,23 +144,23 @@ public:
 
 
 typedef struct {
-	PdfObject *obj;
+    PdfObject *obj;
     int8_t type;    // 0=free(f), 1=nonfree(n), 2=compressed
-	int major;   // object no.
-	int minor; // gen id for type 1, (always 0 for type 2)
+    int major;   // object no.
+    int minor; // gen id for type 1, (always 0 for type 2)
     union {
         int offset; // offset of obj from beginning of file (type 1 only)
         int next_free;// obj no of next free obj (type 0 only)
         int obj_stm; // obj no. of object stream where obj is stored (type 2 only)
     };
     int index;// index no. within the obj stream (for type 2)
-	bool used;
+    bool used;
 } ObjectTableItem;
 
 class ObjectTable
 {
 public:
-	std::vector<ObjectTableItem> table;
+    std::vector<ObjectTableItem> table;
 
     int count();
     void expandToFit(size_t size);

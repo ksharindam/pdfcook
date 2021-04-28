@@ -85,7 +85,7 @@ bool doc_pages_delete (PdfDocument &doc, PageRanges &pages)
 {
     pages.sort();
     int deleted = 0;
-	for (int page_num : pages) {
+    for (int page_num : pages) {
         doc.page_list.remove(page_num-1-deleted);
         deleted++;
     }
@@ -109,9 +109,9 @@ bool doc_pages_number (PdfDocument &doc, PageRanges &pages,
                     int x, int y, int start, const char *text, int size, const char *font_name)
 {
     start -= 1;// this will help to calc page number to print
-	Point poz;
+    Point poz;
     char *str;
-	// make sure that given text contains a %d, which is replaced by page number
+    // make sure that given text contains a %d, which is replaced by page number
     const char *p1 = strstr(text, "%d");// find %d in the given text
     const char *p2 = strstr(text, "%");// first % is followed by d
     if (p1==NULL || p1!=p2){
@@ -124,7 +124,7 @@ bool doc_pages_number (PdfDocument &doc, PageRanges &pages,
     }
     Font font = doc.newFontObject(font_name);
 
-	for (int page_num : pages) {
+    for (int page_num : pages) {
         if (page_num-start<1)
             continue;
         PdfPage &page = doc.page_list[page_num-1];// page index = page_num -1
@@ -132,32 +132,32 @@ bool doc_pages_number (PdfDocument &doc, PageRanges &pages,
         poz.x = (x!=-1) ? page_size.left.x +x :
                         page_size.left.x + (page_size.right.x - page_size.left.x)/2;
         poz.y = (y!=-1) ? page_size.left.y + y : page_size.left.y + size+10;
-		asprintf(&str, text, page_num-start);
+        asprintf(&str, text, page_num-start);
         page.drawText(str, poz, size, font);
-		free(str);
-	}
-	return true;
+        free(str);
+    }
+    return true;
 }
 
 bool doc_pages_text (PdfDocument &doc, PageRanges &pages,
                     int x, int y, const char *text, int size, const char *font_name)
 {
-	Point poz;
+    Point poz;
     Font font = doc.newFontObject(font_name);
 
-	for (int page_num : pages) {
+    for (int page_num : pages) {
         PdfPage &page = doc.page_list[page_num-1];// page index = page_num -1
         Rect page_size = page.pageSize();
         poz.x = page_size.left.x + x;
         poz.y = page_size.left.y + y;
         page.drawText(text, poz, size, font);
-	}
-	return true;
+    }
+    return true;
 }
 
 bool doc_pages_crop (PdfDocument &doc, PageRanges &pages, Rect crop_area)
 {
-	for (int page_num : pages){
+    for (int page_num : pages){
         PdfPage &page = doc.page_list[page_num-1];
         page.crop(crop_area);
     }
@@ -166,7 +166,7 @@ bool doc_pages_crop (PdfDocument &doc, PageRanges &pages, Rect crop_area)
 
 bool doc_pages_transform(PdfDocument &doc, PageRanges &pages, Matrix mat)
 {
-	for (int page_num : pages) {
+    for (int page_num : pages) {
         PdfPage &page = doc.page_list[page_num-1];// page index = page_num -1
         page.transform(mat);
     }
@@ -177,10 +177,10 @@ bool doc_pages_translate(PdfDocument &doc, PageRanges &pages, float x, float y)
 {
     Rect paper;
 
-	Matrix  matrix;
-	matrix.translate(x,y);
+    Matrix  matrix;
+    matrix.translate(x,y);
 
-	for (int page_num : pages) {
+    for (int page_num : pages) {
         PdfPage &page = doc.page_list[page_num-1];
         Rect page_size = page.pageSize();
         // this transforms page content, bbox and paper size
@@ -188,27 +188,27 @@ bool doc_pages_translate(PdfDocument &doc, PageRanges &pages, float x, float y)
         // we dont want to transform paper so restoring it
         page.paper = page_size;
         page.bbox_is_cropbox = false;// if cropbox is not removed, translation wont be seen
-	}
-	return true;
+    }
+    return true;
 }
 
 bool doc_pages_scaleto (PdfDocument &doc, PageRanges &pages, Rect paper,
                         float top, float right, float bottom, float left)//margins
 {
-	double scale, scale_x, scale_y;
-	double move_x, move_y;
-	double old_page_w, old_page_h, avail_w, avail_h;
+    double scale, scale_x, scale_y;
+    double move_x, move_y;
+    double old_page_w, old_page_h, avail_w, avail_h;
 
-	Rect bbox = paper;
-	bbox.right.x -= right;
-	bbox.right.y -= top;
-	bbox.left.x  += left;
-	bbox.left.y  += bottom;
+    Rect bbox = paper;
+    bbox.right.x -= right;
+    bbox.right.y -= top;
+    bbox.left.x  += left;
+    bbox.left.y  += bottom;
     // available width and height inside margin
-	avail_w = bbox.right.x - bbox.left.x;
-	avail_h = bbox.right.y - bbox.left.y;
+    avail_w = bbox.right.x - bbox.left.x;
+    avail_h = bbox.right.y - bbox.left.y;
 
-	for (int page_num : pages){
+    for (int page_num : pages){
         PdfPage &page = doc.page_list[page_num-1];
         Rect page_size = page.pageSize();
         // using paper size instead of bounding box size, because viewers show paper
@@ -235,15 +235,15 @@ bool doc_pages_scaleto (PdfDocument &doc, PageRanges &pages, Rect paper,
         matrix.translate(move_x, move_y);
 
         page.transform(matrix);
-		page.paper = paper;
+        page.paper = paper;
         page.bbox_is_cropbox = false;
-	}
+    }
     return true;
 }
 
 bool doc_pages_set_paper_size (PdfDocument &doc, PageRanges &pages, Rect paper)
 {
-	for (int page_num : pages){
+    for (int page_num : pages){
         PdfPage &page = doc.page_list[page_num-1];
         page.paper = paper;
     }
@@ -265,21 +265,21 @@ static std::list<PaperSize> paper_sizes({
     { "a0", 2382, 3369 },   // 84.1cm * 118.8cm
     { "a1", 1684, 2382 },   // 59.4cm * 84.1cm
     { "a2", 1191, 1684 },   // 42cm * 59.4cm
-    { "a3",  842, 1191 },	// 29.7cm * 42cm
-    { "a4",  595,  842 },	// 21cm * 29.7cm
+    { "a3",  842, 1191 },   // 29.7cm * 42cm
+    { "a4",  595,  842 },   // 21cm * 29.7cm
     { "a5",  421,  595 },   // 14.85cm * 21cm
-    { "a6",  297,  420 },	// 10.5cm * 14.85 cm
-    { "a7",  210,  297 },	// 7.4cm * 10.5cm
-    { "a8",  148,  210 },	// 5.2cm * 7.4cm
-    { "a9",  105,  148 },	// 3.7cm * 5.2cm
-    { "a10",  73,  105 },	// 2.6cm * 3.7cm
-    { "b0", 2835, 4008 },	// 100cm * 141.4cm
-    { "b1", 2004, 2835 },	// 70.7cm * 100cm
-    { "b2", 1417, 2004 },	// 50cm * 70.7cm
-    { "b3", 1001, 1417 },	// 35.3cm * 50cm
-    { "b4",  709, 1001 },	// 25cm * 35.3cm
-    { "b5",  499,  709 },	// 17.6cm * 25cm
-    { "b6",  354,  499 },	// 12.5cm * 17.6cm
+    { "a6",  297,  420 },   // 10.5cm * 14.85 cm
+    { "a7",  210,  297 },   // 7.4cm * 10.5cm
+    { "a8",  148,  210 },   // 5.2cm * 7.4cm
+    { "a9",  105,  148 },   // 3.7cm * 5.2cm
+    { "a10",  73,  105 },   // 2.6cm * 3.7cm
+    { "b0", 2835, 4008 },   // 100cm * 141.4cm
+    { "b1", 2004, 2835 },   // 70.7cm * 100cm
+    { "b2", 1417, 2004 },   // 50cm * 70.7cm
+    { "b3", 1001, 1417 },   // 35.3cm * 50cm
+    { "b4",  709, 1001 },   // 25cm * 35.3cm
+    { "b5",  499,  709 },   // 17.6cm * 25cm
+    { "b6",  354,  499 },   // 12.5cm * 17.6cm
     { "jisb0", 2920, 4127 },// 103.0cm * 145.6cm
     { "jisb1", 2064, 2920 },// 72.8cm * 103.0cm
     { "jisb2", 1460, 2064 },// 51.5cm * 72.8cm
@@ -287,28 +287,28 @@ static std::list<PaperSize> paper_sizes({
     { "jisb4",  729, 1032 },// 25.7cm * 36.4cm
     { "jisb5",  516,  729 },// 18.2cm * 25.7cm
     { "jisb6",  363,  516 },// 12.8cm * 18.2cm
-    { "c0",  2599, 3677 },	// 91.7cm * 129.7cm
-    { "c1",  1837, 2599 },	// 64.8cm * 91.7cm
-    { "c2",  1298, 1837 },	// 45.8cm * 64.8cm
-    { "c3",   918, 1298 },	// 32.4cm * 45.8cm
-    { "c4",   649,  918 },	// 22.9cm * 32.4cm
-    { "c5",   459,  649 },	// 16.2cm * 22.9cm
-    { "c6",   323,  459 },	// 11.4cm * 16.2cm
-    { "ledger",   1224,  792 },	// 17in * 11in
-    { "tabloid",   792, 1224 },	// 11in * 17in
-    { "letter",    612,  792 },	// 8.5in * 11in
+    { "c0",  2599, 3677 },  // 91.7cm * 129.7cm
+    { "c1",  1837, 2599 },  // 64.8cm * 91.7cm
+    { "c2",  1298, 1837 },  // 45.8cm * 64.8cm
+    { "c3",   918, 1298 },  // 32.4cm * 45.8cm
+    { "c4",   649,  918 },  // 22.9cm * 32.4cm
+    { "c5",   459,  649 },  // 16.2cm * 22.9cm
+    { "c6",   323,  459 },  // 11.4cm * 16.2cm
+    { "ledger",   1224,  792 }, // 17in * 11in
+    { "tabloid",   792, 1224 }, // 11in * 17in
+    { "letter",    612,  792 }, // 8.5in * 11in
     { "halfletter",396,  612 }, // 5.5in * 8.5in
-    { "statement", 396,  612 },	// 5.5in * 8.5in
-    { "legal",     612, 1008 },	// 8.5in * 14in
-    { "executive", 540,  720 },	// 7.6in * 10in
-    { "folio",  612, 936 },	    // 8.5in * 13in
-    { "quarto", 610, 780 },	    // 8.5in * 10.83in
-    { "10x14", 720, 1008 },	    // 10in * 14in
-    { "arche", 2592, 3456 },	// 34in * 44in
-    { "archd", 1728, 2592 },	// 22in * 34in
-    { "archc", 1296, 1728 },	// 17in * 22in
-    { "archb",  864, 1296 },	// 11in * 17in
-    { "archa",  648,  864 },	// 8.5in * 11in
+    { "statement", 396,  612 }, // 5.5in * 8.5in
+    { "legal",     612, 1008 }, // 8.5in * 14in
+    { "executive", 540,  720 }, // 7.6in * 10in
+    { "folio",  612, 936 },     // 8.5in * 13in
+    { "quarto", 610, 780 },     // 8.5in * 10.83in
+    { "10x14", 720, 1008 },     // 10in * 14in
+    { "arche", 2592, 3456 },    // 34in * 44in
+    { "archd", 1728, 2592 },    // 22in * 34in
+    { "archc", 1296, 1728 },    // 17in * 22in
+    { "archb",  864, 1296 },    // 11in * 17in
+    { "archa",  648,  864 },    // 8.5in * 11in
     { "flsa",   612,  936 },    // 8.5in * 13in (U.S. foolscap)
     { "flse",   612,  936 }     // 8.5in * 13in (European foolscap)
 });

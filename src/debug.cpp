@@ -6,14 +6,14 @@
 
 int quiet_mode = 0;
 
-#define MAX_MSG_LEN	255	/* maximum formatted message length */
+#define MAX_MSG_LEN 255 /* maximum formatted message length */
 
 void message(int type, const char *format, ...)
 {
     if (quiet_mode && type!=FATAL)
         return;
-    char msgbuf[MAX_MSG_LEN+1] = {};	/* buffer in which to put the message */
-    char *bufptr = msgbuf ;	/* message buffer pointer */
+    char msgbuf[MAX_MSG_LEN+1] = {};    /* buffer in which to put the message */
+    char *bufptr = msgbuf ; /* message buffer pointer */
     int pos = 0;
     // should put newline if column is not 0 in terminal
     if (type==WARN) {
@@ -33,7 +33,7 @@ void message(int type, const char *format, ...)
     // write the string to stdout or stderr
     fwrite(msgbuf, strlen(msgbuf), 1, stderr);
     fwrite("\n", 1, 1, stderr);
-    if ( type==FATAL )	// exit program after the FATAL msg
+    if ( type==FATAL )  // exit program after the FATAL msg
         exit(1) ;
 }
 

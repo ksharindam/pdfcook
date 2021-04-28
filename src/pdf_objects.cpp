@@ -200,41 +200,41 @@ bool StreamObj:: decompress()
 
 bool StreamObj:: compress (const char *filter)
 {
-	char *ch;
+    char *ch;
 
-	if (apply_compress_filter(filter, &(this->stream), &(this->len), this->dict) != 0){
-		return false;
-	}
-	PdfObject *filter_obj = this->dict.get("Filter");
+    if (apply_compress_filter(filter, &(this->stream), &(this->len), this->dict) != 0){
+        return false;
+    }
+    PdfObject *filter_obj = this->dict.get("Filter");
 
-	if (!filter_obj) {
-		filter_obj = this->dict.newItem("Filter");
-		asprintf(&ch,"/%s",filter);
-		filter_obj->readFromString(ch);
-		free(ch);
-	}
-	else {// already contains a filter
-	  	switch (filter_obj->type){
-		case PDF_OBJ_ARRAY:
+    if (!filter_obj) {
+        filter_obj = this->dict.newItem("Filter");
+        asprintf(&ch,"/%s",filter);
+        filter_obj->readFromString(ch);
+        free(ch);
+    }
+    else {// already contains a filter
+        switch (filter_obj->type){
+        case PDF_OBJ_ARRAY:
             {
-			asprintf(&ch,"/%s",filter);
+            asprintf(&ch,"/%s",filter);
             PdfObject *array_item = new PdfObject();
-			array_item->readFromString(ch);
-			free(ch);
-			filter_obj->array->append(array_item);
+            array_item->readFromString(ch);
+            free(ch);
+            filter_obj->array->append(array_item);
             }
-			break;
-		case PDF_OBJ_NAME:
-			asprintf(&ch, " [ /%s /%s ] ", filter_obj->name, filter);
-			filter_obj->clear();
-			filter_obj->readFromString(ch);
-			free(ch);
-			break;
-		default:
-			assert(0);
-		}
-	}
-	return true;
+            break;
+        case PDF_OBJ_NAME:
+            asprintf(&ch, " [ /%s /%s ] ", filter_obj->name, filter);
+            filter_obj->clear();
+            filter_obj->readFromString(ch);
+            free(ch);
+            break;
+        default:
+            assert(0);
+        }
+    }
+    return true;
 }
 
 StreamObj:: ~StreamObj() {
@@ -783,9 +783,9 @@ ObjectTable:: readObject(MYFILE *f, int major)
 void ObjectTable:: readObjects(MYFILE *f)
 {
     // at first load nonfree objects and then decompress object streams
-	for (size_t i=1; i<table.size(); ++i) {
+    for (size_t i=1; i<table.size(); ++i) {
         //message(LOG, "reading obj %d, type %d", i, xref->table[i].type);
-		switch (table[i].type) {
+        switch (table[i].type) {
             case 0:     // free obj
                 break;
             case 1:     //nonfree obj
@@ -803,8 +803,8 @@ void ObjectTable:: readObjects(MYFILE *f)
                 table[i].type = 1;
             default:
                 break;
-		}
-	}
+        }
+    }
 }
 
 // from PDF 1.5 the xreftable can be a stream in an indirect object.
@@ -899,7 +899,7 @@ bool ObjectTable:: get (MYFILE *f, size_t xref_poz, char *line, PdfObject *p_tra
     do { c = mygetc(f); }
     while (isspace(c));
     myungetc(f);
-    if ((myfgets(line,LLEN,f,NULL))==EOF){
+    if (myfgets(line,LLEN,f)==NULL){
         return false;
     }
     if (!starts(line, "xref")) {
@@ -907,7 +907,7 @@ bool ObjectTable:: get (MYFILE *f, size_t xref_poz, char *line, PdfObject *p_tra
         return this->getFromStream(f, p_trailer);
     }
     //FILE *fd = fopen("xref", "wb");
-    while ((pos = myftell(f)) && myfgets(line,LLEN,f,NULL)!=EOF && len>=0){
+    while ((pos = myftell(f)) && myfgets(line,LLEN,f)!=NULL && len>=0){
         char *entry = line;
         while (isspace(*entry)) // fixes for leading spaces in xref table
             entry++;
@@ -948,12 +948,12 @@ bool ObjectTable:: get (MYFILE *f, size_t xref_poz, char *line, PdfObject *p_tra
     if (object_count!=0){
         return false;
     }
-	if (table[0].type!=0){//in some bad xref tables
+    if (table[0].type!=0){//in some bad xref tables
         debug("obj no 0 is not free");
-	}
+    }
     while (!starts(line,"trailer")){
         pos = myftell(f);
-        if (myfgets(line,LLEN,f,NULL)==EOF){
+        if (myfgets(line,LLEN,f)==NULL){
             message(ERROR, "trailer keyword not found");
             return false;
         }
@@ -976,10 +976,10 @@ int ObjectTable:: addObject (PdfObject *obj)
     ObjectTableItem item = {NULL,0,0,0,0,0,0};
     table.resize(major+1, item);
 
-	table[major].major = major;
-	table[major].type = 1;
-	table[major].obj = obj;
-	return major;
+    table[major].major = major;
+    table[major].type = 1;
+    table[major].obj = obj;
+    return major;
 }
 
 PdfObject* ObjectTable:: getObject(int major, int minor)
@@ -992,39 +992,39 @@ PdfObject* ObjectTable:: getObject(int major, int minor)
 
 void ObjectTable:: writeObjects (FILE *f)
 {
-	for (size_t i=1; i<table.size(); ++i){
-		switch (table[i].type){
-			case 0:
-				continue;
-			case 1:
-				table[i].offset = ftell(f);
-				if (fprintf(f,"%d %d obj\n", table[i].major, table[i].minor)<0){
-					message(FATAL,"I/O error");
-				}
-				if (table[i].obj->write(f)<0){
-					message(FATAL,"I/O error");
-				}
-				if (fprintf(f,"\nendobj\n")<0){
-					message(FATAL,"I/O error");
-				}
-				break;
-			default:
-				assert(0);
-		}
-	}
+    for (size_t i=1; i<table.size(); ++i){
+        switch (table[i].type){
+            case 0:
+                continue;
+            case 1:
+                table[i].offset = ftell(f);
+                if (fprintf(f,"%d %d obj\n", table[i].major, table[i].minor)<0){
+                    message(FATAL,"I/O error");
+                }
+                if (table[i].obj->write(f)<0){
+                    message(FATAL,"I/O error");
+                }
+                if (fprintf(f,"\nendobj\n")<0){
+                    message(FATAL,"I/O error");
+                }
+                break;
+            default:
+                assert(0);
+        }
+    }
 }
 
 void ObjectTable:: writeXref (FILE *f)
 {
     table[0].type = 0;// obj 0 is always free
     table[0].minor = 65535; // and it has maximum gen id
-	fprintf(f, "xref\n%d %d\n", 0, table.size());
-	for (size_t i=0; i<table.size(); ++i){
+    fprintf(f, "xref\n%d %d\n", 0, table.size());
+    for (size_t i=0; i<table.size(); ++i){
         char type = (table[i].type) ? 'n' : 'f';
-		if (fprintf(f,"%010d %05d %c \n", table[i].offset, table[i].minor, type)<0){
-			message(FATAL, "I/O error");
-		}
-	}
+        if (fprintf(f,"%010d %05d %c \n", table[i].offset, table[i].minor, type)<0){
+            message(FATAL, "I/O error");
+        }
+    }
 }
 
 
@@ -1263,7 +1263,7 @@ end_lit_str:
                 mystring_add_char(&mstr, ')');
                 mstr.str = (char*) realloc(mstr.str, mstr.cpoz);
                 this->type = TOK_STR;
-                this->str.len = mstr.cpoz-1;
+                this->str.len = mstr.cpoz-1;// string sometimes contains null byte, so need to store size
                 this->str.data = mstr.str;
                 return true;
             break;
