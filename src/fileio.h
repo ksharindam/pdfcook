@@ -21,7 +21,7 @@ typedef struct {
 // returns the current char and seek 1 byte forward
 #define mygetc(f) ((f->ptr < f->end) ? *(f->ptr)++ : slow_mygetc(f))
 // seek 1 byte backward
-#define myungetc(f) (f->ptr=((f->ptr)>(f->buf))?(f->ptr-1):(f->buf))
+#define myungetc(f) (f->ptr = ((f->ptr)>(f->buf)) ? (f->ptr-1) : (f->buf))
 
 
 // open a file stream by given filename

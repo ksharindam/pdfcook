@@ -6,6 +6,8 @@
 #include "debug.h"
 #include "pdf_filters.h"
 
+std::string get_correct_name(MYFILE *f, int start, int end);
+
 // *********** ------------- Array Object ----------------- ***********
 //allows range based for loop
 ArrayIter ArrayObj:: begin() {
@@ -291,7 +293,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
     uint stream_len = 0;
     PdfObject *item_obj, *next_obj, *len_obj=NULL;
     std::map<std::string, PdfObject*>  new_dict;
-    size_t fpos;
+    size_t fpos, key_pos, nextkey_pos, val_pos;
     Token tok;
     if (last_tok==NULL){
         last_tok=&tok;
@@ -366,6 +368,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             //this->str.type = last_tok->str.type;
             return true;
         case TOK_BDICT:// dictionary or stream obj
+            nextkey_pos = myftell(f);
             next_obj = new PdfObject();
             next_obj->read(f, xref, last_tok);
             // next_obj must be a name obj
@@ -375,22 +378,28 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                 item_obj = new PdfObject();
                 item_obj->read(f, xref, last_tok);
                 // next obj should be a name obj or TOK_EDICT
+                key_pos = nextkey_pos;
+                nextkey_pos = myftell(f);
                 next_obj->clear();
                 next_obj->read(f, xref, last_tok);
                 // This part wont be required if some shitty pdf writers did not
                 // put space inside pdf name object. Here we are checking if next obj
-                // is a name obj, if not, read objs until we get a name obj, then save
-                // prev key and value (obj just before next name obj)
+                // is a name obj, if not, read objs until we get a name obj, then add
+                // prev key and value (obj just before next name obj) to dict map
                 if ( item_obj->type==PDF_OBJ_UNKNOWN || next_obj->type!=PDF_OBJ_NAME ){
                     // now, either we have reached dict end, or name obj is invalid
-                    while (last_tok->type!=TOK_EDICT) {
+                    while (last_tok->type!=TOK_EDICT/*&& last_tok->type==TOK_EOF*/) {
+                        val_pos = nextkey_pos;// next obj is not name obj, means it was val
+                        nextkey_pos = myftell(f);
                         // current name obj is invalid, find next name obj
                         delete item_obj;
                         item_obj = next_obj;
                         next_obj = new PdfObject();
                         next_obj->read(f, xref, last_tok);
-                        if (next_obj->type==PDF_OBJ_NAME/*|| last_tok->type==TOK_EOF*/)
-                            break;// TODO : replace space with #20 in name obj
+                        if (next_obj->type==PDF_OBJ_NAME || last_tok->type==TOK_EDICT){
+                            key = get_correct_name(f, key_pos, val_pos);// replaces spaces with #20
+                            break;
+                        }
                     }
                 }
                 if (key == "Length"){
@@ -1363,3 +1372,32 @@ Token:: freeData()
     }
 }
 
+// read file from start pos to end pos and get pdf name obj,
+// then replace spaces with #20
+std::string get_correct_name(MYFILE *f, int start, int end)
+{
+    size_t pos = myftell(f);
+
+    char src[256];
+    char out[256] = {};
+
+    int len = end - start;
+    assert(len<256);
+
+    myfseek(f, start, SEEK_SET);
+    myfread(src, 1, len, f);
+
+    for (end=len; end>0 && src[end-1]==' '; end--);
+    for (start=0; start<end && src[start++]!='/'; );
+
+    for (int i=0, j=start; j<end; i++, j++) {
+        out[i] = src[j];
+        if (out[i]==' ') {
+            out[i++] = '#';
+            out[i++] = '2';
+            out[i] = '0';
+        }
+    }
+    myfseek(f, pos, SEEK_SET);
+    return std::string(out);
+}
