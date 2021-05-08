@@ -798,10 +798,10 @@ void ObjectTable:: readObjects(MYFILE *f)
             case 0:     // free obj
                 break;
             case 1:     //nonfree obj
-                /* some bad xref table may have offset==0, or offset > file size*/
-                //message(LOG, "obj no. %d, offset %d", i, xref->table[i].offset);
+                /* some bad xref table may have offset==0, or offset > file size.
+                This wont create problem until the obj is referenced */
                 if (table[i].offset==0){
-                    debug("warning : offset of nonfree obj no %d is 0", i);
+                    debug("offset of nonfree obj no %d is 0", i);
                     table[i].type = 0;
                     break;
                 }

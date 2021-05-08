@@ -181,13 +181,13 @@ bool PdfDocument:: open (const char *fname)
     if (not getPdfHeader(f,iobuffer) || not getPdfTrailer(f,iobuffer,-1)){
         return false;
     }
+    message(LOG, fname);
+    debug("    Version : %d.%d", v_major, v_minor);
+    debug("    Objects : %d", obj_table.table.size());
     obj_table.readObjects(f);
     getAllPages(f);
     myfclose(f);
 
-    message(LOG, fname);
-    debug("    Version : %d.%d", v_major, v_minor);
-    debug("    Objects : %d", obj_table.table.size());
     message(LOG, "    Pages : %d", page_list.count());
     return true;
 }
@@ -476,14 +476,13 @@ static void flag_used_objects (PdfObject *obj, ObjectTable &table)
             if (table[obj->indirect.major].used){
                 return;
             }
-            table[obj->indirect.major].used = true;
             if (table[obj->indirect.major].obj==NULL){
-                // in some bad pdfs even the object is free, the object is referenced
-                message(WARN, "referencing free obj : %d %d R", obj->indirect.major, obj->indirect.minor);
-                table[obj->indirect.major].obj = new PdfObject();
-                table[obj->indirect.major].obj->type = PDF_OBJ_NULL;
+                // in some bad pdfs even if the object is free, the object is referenced
+                debug("warning : referencing free obj : %d %d R", obj->indirect.major, obj->indirect.minor);
+                obj->type = PDF_OBJ_NULL;
                 return;
             }
+            table[obj->indirect.major].used = true;
             flag_used_objects(table[obj->indirect.major].obj, table);
             return;
         default:
