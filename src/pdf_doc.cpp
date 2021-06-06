@@ -532,7 +532,7 @@ static void updateRefs(PdfDocument &doc)
         page.major = doc.obj_table[page.major].major;
     }
     update_obj_ref(doc.trailer, doc.obj_table);
-    for (int i=0; i<doc.obj_table.count(); i++) {
+    for (int i=1; i<doc.obj_table.count(); i++) {// obj 0 may be nonfree in bad pdfs, causing segfault
         if (doc.obj_table[i].type) {
             update_obj_ref(doc.obj_table[i].obj, doc.obj_table);
         }
