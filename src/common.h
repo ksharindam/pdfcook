@@ -11,6 +11,8 @@
 //#include <cstdint> // uint32_t type
 //#include <cctype> // toupper() isspace() etc
 
+extern bool repair_mode;
+
 typedef unsigned int uint;
 // M_PI is not available in mingw32, so using and defining PI
 #define PI 3.14159265358979323846

@@ -23,6 +23,9 @@
 #include <cstdio>
 #include <getopt.h>
 
+// when no commands are provided, no pdf objects are removed, dict filters not applied
+bool repair_mode = false;
+
 
 char pusage[][LLEN] = {
     "Usage: pdfcook [<options>] [<commands>] <infile> ... <outfile>",
@@ -96,6 +99,7 @@ static void parseargs (int argc, char *argv[], Conf * conf)
     case 2:
         conf->infile = optind;
         conf->outfile = optind + 1;
+        repair_mode = true;
         break;
     case 3:
         conf->commands = argv[optind];

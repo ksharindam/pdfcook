@@ -147,7 +147,8 @@ bool PdfDocument:: getPdfTrailer (MYFILE *f, char *line, long offset)
             return false;
         } // this->trailer = Prev trailer, p_trailer = current trailer
     }
-    p_trailer->dict->filter(trailer_filter);
+    if (not repair_mode)
+        p_trailer->dict->filter(trailer_filter);
     this->trailer->dict->merge(p_trailer->dict);
     delete p_trailer;
     return true;
@@ -161,7 +162,8 @@ bool PdfDocument:: getAllPages(MYFILE *f)
         message(FATAL,"Trailer dictionary doesn't contain Root entry");
     }
     pobj = obj_table.getObject(pobj->indirect.major, pobj->indirect.minor);
-    pobj->dict->filter(catalog_filter);
+    if (not repair_mode)
+        pobj->dict->filter(catalog_filter);
     pobj = pobj->dict->get("Pages");
     if (not isRef(pobj)){
         message(FATAL,"Catalog dictionary dosn't contain Pages entry");
@@ -276,7 +278,8 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
             else
                 new_page.bbox = new_page.paper;
         }
-        pages->dict->filter(page_filter);
+        if (not repair_mode)
+            pages->dict->filter(page_filter);
         new_page.major = major;
         new_page.minor = minor;
         new_page.doc = this;
@@ -727,7 +730,8 @@ stream_to_xobj (PdfObject *contents, PdfObject *page, Rect &bbox, ObjectTable &o
             assert(0);
         }
     }
-    xobj->stream->dict.filter(xobject_filter);
+    if (not repair_mode)
+        xobj->stream->dict.filter(xobject_filter);
     return obj_table.addObject(xobj);
 }
 
