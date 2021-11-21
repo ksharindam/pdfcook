@@ -402,52 +402,53 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                         }
                     }
                 }
-                if (key == "Length"){
-                    this->setType(PDF_OBJ_STREAM);
-                    len_obj = item_obj;
-                }
-                else
-                    new_dict[key] = item_obj;
+                new_dict[key] = item_obj;
             }
             delete next_obj;
-            // if dict has /Length key then it is stream object
-            if (this->type != PDF_OBJ_STREAM) {
+            fpos = myftell(f);
+            // if dict has stream keyword, then it is stream object
+            if ( (not last_tok->get(f))
+                    || last_tok->type!=TOK_ID
+                    || strcmp(last_tok->id, "stream")!=0) {
                 this->setType(PDF_OBJ_DICT);
                 this->dict->setDict(new_dict);
+                myfseek(f, fpos, SEEK_SET);
                 return true;
             }
+            this->setType(PDF_OBJ_STREAM);
             this->stream->dict.setDict(new_dict);
             // if stream length is indirect obj, get length as integer
+            if (new_dict.count("Length")==0){
+                message(WARN, "stream obj does not have /Length key");
+                return false;
+            }
+            len_obj = new_dict["Length"];
             switch (len_obj->type)
             {
             case PDF_OBJ_INT:
                 stream_len = len_obj->integer;
                 break;
             case PDF_OBJ_INDIRECT_REF:
-                {
-                    fpos = myftell(f);
-                    xref->readObject(f, len_obj->indirect.major);
-                    PdfObject *ref_obj = xref->table[len_obj->indirect.major].obj;
-                    if (ref_obj->type == PDF_OBJ_INT) {
-                        stream_len = ref_obj->integer;
-                    }
-                    else {
-                        message(FATAL, "Stream length is not int");
-                    }
-                    myfseek(f, fpos, SEEK_SET);
+            {
+                fpos = myftell(f);
+                xref->readObject(f, len_obj->indirect.major);
+                PdfObject *ref_obj = xref->table[len_obj->indirect.major].obj;
+                if (ref_obj->type == PDF_OBJ_INT) {
+                    stream_len = ref_obj->integer;
                 }
+                else {
+                    message(FATAL, "Stream length is not int");
+                }
+                myfseek(f, fpos, SEEK_SET);
                 break;
+            }
             default:
                 message(WARN, "Can't read stream length of type %d", len_obj->type);
                 return false;
             }
+            this->stream->dict.dict.erase("Length");// does not delete PdfObject
             delete len_obj;
-            if ( (not last_tok->get(f))
-                || last_tok->type!=TOK_ID
-                || strcmp(last_tok->id, "stream")!=0) {
-                message(WARN, "stream keyword not found");
-                return false;
-            }
+            // read stream after the newline
             switch (mygetc(f)){
                 case EOF:
                     return false;
@@ -464,16 +465,16 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             this->stream->begin = myftell(f);
             this->stream->len = stream_len;
             if (stream_len){
-                this->stream->stream = (char *)malloc(sizeof(char) * stream_len);
+                this->stream->stream = (char*) malloc(stream_len);
                 if (this->stream->stream==NULL){
                     message(FATAL,"malloc() error");
                 }
-                if (myfread(this->stream->stream,sizeof(char),stream_len,f)!=stream_len){
+                if (myfread(this->stream->stream,1,stream_len,f)!=stream_len){
                     message(FATAL,"fread() error");
                 }
             }
             else {// for stream length is 0
-                this->stream->stream = (char *)malloc(sizeof(char) * 1);
+                this->stream->stream = (char *)malloc(1);
                 if (this->stream->stream==NULL){
                     message(FATAL,"malloc() error");
                 }
