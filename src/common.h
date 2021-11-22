@@ -4,6 +4,7 @@
 #define _GNU_SOURCE// for asprintf()
 #endif
 #include "config.h"
+#include <string>
 #include <cstdio>
 #include <cstring>// memcpy and other string func
 #include <cassert>
@@ -29,3 +30,6 @@ int asprintf(char **strp, const char *fmt, ...);
 
 // read a big endian integer provided as char array
 int arr2int(char *arr, int len);
+
+// like %f but strips trailing zeros
+std::string double2str(double num);

@@ -51,3 +51,15 @@ int asprintf(char **strp, const char *fmt, ...){
 }
 #endif
 
+// like %f but strips trailing zeros
+std::string double2str(double real)
+{
+    int len = std::snprintf(nullptr, 0, "%f", real);// get length
+    char buf[len+1];
+    std::snprintf(buf, len+1, "%f", real);
+    while (buf[len-1]=='0')// strip trailing zeros
+        len--;
+    if (buf[len-1]=='.')// keep a zero after decimal point eg. 2.0
+        len++;
+    return std::string(buf, len);
+}

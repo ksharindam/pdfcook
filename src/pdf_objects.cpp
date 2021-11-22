@@ -546,9 +546,10 @@ PdfObject:: write (FILE * f)
         ret_val = fprintf(f, "%d", this->integer);
         return ret_val<0?ret_val:0;
     case PDF_OBJ_REAL:
-        // we dont want trailing zeros in a float, so we used %g instead of %f
-        ret_val = fprintf(f, "%g", this->real);
+    {
+        ret_val = fprintf(f, "%s", double2str(this->real).c_str());
         return ret_val<0?ret_val:0;
+    }
     case PDF_OBJ_STR:
         ret_val = fwrite(this->str.data, this->str.len, 1, f);
         return ret_val<0?ret_val:0;

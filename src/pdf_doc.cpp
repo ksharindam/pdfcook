@@ -979,11 +979,10 @@ PdfPage:: applyTransformation()
     if (stream->stream->len==0){
         return;
     }
-    //asprintf(&str, "q %f %f %f %f %f %f cm\n",
-    asprintf(&str, "q %g %g %g %g %g %g cm\n",
-                    matrix.mat[0][0], matrix.mat[0][1],
-                    matrix.mat[1][0], matrix.mat[1][1],
-                    matrix.mat[2][0], matrix.mat[2][1]);
+    asprintf(&str, "q %s %s %s %s %s %s cm\n",
+            double2str(matrix.mat[0][0]).c_str(), double2str(matrix.mat[0][1]).c_str(),
+            double2str(matrix.mat[1][0]).c_str(), double2str(matrix.mat[1][1]).c_str(),
+            double2str(matrix.mat[2][0]).c_str(), double2str(matrix.mat[2][1]).c_str() );
 
     pdf_stream_prepend(stream, str, strlen(str));
     pdf_stream_append(stream, " Q", 2);
