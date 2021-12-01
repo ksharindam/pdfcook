@@ -2,9 +2,9 @@
 CC = gcc
 CXX = g++
 CFLAGS = -Wall -O2
-CXXFLAGS = -Wall -O2 -std=c++11 -DDEBUG
+CXXFLAGS = -Wall -O2 -std=c++11 -DDEBUG -g
 INCLUDES =
-LFLAGS = -s
+LFLAGS = 
 LIBS = -lm -lz
 
 BUILD_DIR = ../build

@@ -2,6 +2,7 @@
 /* This file is a part of pdfcook program, which is GNU GPLv2 licensed */
 #include "pdf_objects.h"
 #include "geometry.h"
+#include "crypt.h"
 #include <cassert>
 
 class PdfDocument;
@@ -61,6 +62,7 @@ public:
 class PdfDocument
 {
 public:
+    const char *filename;
     int v_major;
     int v_minor;
     Rect paper;
@@ -71,6 +73,11 @@ public:
     ObjectTable obj_table;
     PdfObject *trailer;
 
+    bool encrypted;
+    bool have_encrypt_info;
+    bool decryption_supported;
+    Crypt crypt;
+
     PdfDocument();
     ~PdfDocument();
 
@@ -79,6 +86,7 @@ public:
     bool getAllPages (MYFILE *f);
     bool getPdfPages (MYFILE *f, int major, int minor);
     bool open (const char *fname);
+    bool decrypt(const char *password);
     void mergeDocument(PdfDocument &doc);
 
     void putPdfPages();

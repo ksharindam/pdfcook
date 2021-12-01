@@ -118,13 +118,22 @@ static void parseargs (int argc, char *argv[], Conf * conf)
     }
 }
 
-bool file_exist (const char * name)
+
+bool open_document(PdfDocument &doc, char *filename)
 {
-    FILE *f = fopen(name,"r");
-    if (f==NULL) {
-        return false;
+    if (not doc.open(filename))
+        message(FATAL, "Failed to open file '%s'", filename);
+
+    if (doc.encrypted) {
+        if (doc.decryption_supported) {
+            printf("Enter Password : ");
+            char pwd[128];
+            scanf("%s", pwd);
+            if (!doc.decrypt(pwd))
+                return false;
+        }
+        else return false;
     }
-    fclose(f);
     return true;
 }
 
@@ -135,21 +144,13 @@ int main (int argc, char *argv[])
     parseargs(argc, argv, &conf);// if no args given, program exits here
 
     PdfDocument doc;
-    // check if it exists and try to open first document
-    if (!file_exist(argv[conf.infile])){
-        message(FATAL,"File '%s' not found", argv[conf.infile]);
-    }
-    if (not doc.open( argv[conf.infile] ))
-        message(FATAL, "Failed to open file '%s'", argv[conf.infile]);
-
+    if (not open_document(doc, argv[conf.infile]))
+        return -1;
     // read all other input files (if any) and join them
     for (int i=conf.infile + 1; i<conf.outfile && conf.infile>0; i++){
-        if (!file_exist(argv[i])){
-            message(FATAL,"File '%s' not found", argv[i]);
-        }
         PdfDocument new_doc;
-        if (not new_doc.open( argv[i] ))
-            message(FATAL,"Failed to open file '%s'", argv[i]);
+        if (not open_document(new_doc, argv[i]))
+            return -1;
         doc.mergeDocument(new_doc);
     }
     // build command tree

@@ -21,6 +21,7 @@ Then to build run...
 
 ### Features
 * PDF v1.7 support  
+* Decrypt encrypted PDFs  
 * Join or Split PDFs  
 * Scale to any paper size, with specified margin  
 * Write Page numbers  

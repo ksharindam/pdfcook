@@ -218,3 +218,13 @@ char* myfgets(char *line, int len, MYFILE *f)
     *line = 0;
     return buf;
 }
+
+bool file_exist (const char *name)
+{
+    FILE *f = fopen(name,"r");
+    if (f==NULL) {
+        return false;
+    }
+    fclose(f);
+    return true;
+}

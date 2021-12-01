@@ -141,11 +141,18 @@ MapIter DictObj:: end() {
     return dict.end();
 }
 
+PdfObject* DictObj:: operator[] (std::string key) {
+    if (dict.count(key) < 1)
+        return NULL;
+    return dict[key];
+}
+
 // *********** ------------- Stream Object ----------------- ***********
 
 StreamObj:: StreamObj() {
     stream = NULL;
     len = 0;
+    decompressed = false;
 }
 
 int StreamObj:: write (FILE *f)
@@ -160,7 +167,7 @@ int StreamObj:: write (FILE *f)
     assert (this->stream!=NULL);
     if (this->len){
         if (fwrite(this->stream, sizeof(char), this->len, f) != this->len){
-            message(FATAL, "fwrite() error");
+            message(FATAL, "StreamObj : fwrite() error");
         }
     }
     fprintf(f, "\nendstream");
@@ -169,8 +176,11 @@ int StreamObj:: write (FILE *f)
 
 bool StreamObj:: decompress()
 {
+    if (decompressed)
+        return true;
     PdfObject *p_obj = this->dict["Filter"];
     if (p_obj == NULL) {
+        decompressed = true;
         return true;
     }
     switch (p_obj->type){
@@ -197,6 +207,7 @@ bool StreamObj:: decompress()
         return false;
     }
     this->dict.deleteItem("Filter");
+    decompressed = true;
     return true;
 }
 
@@ -738,13 +749,6 @@ ObjectTable:: readObject(MYFILE *f, int major)
         }
         table[major].obj = obj.indirect.obj;
         obj.type = PDF_OBJ_UNKNOWN;// this is to prevent obj.indirect.obj from being deleted
-        // decompress if it is compressed object stream
-        if (table[major].obj->type==PDF_OBJ_STREAM) {//todo : move to type==2 portion
-            PdfObject *type = table[major].obj->stream->dict["Type"];
-            if (type!=NULL && type->type==PDF_OBJ_NAME && strcmp(type->name,"ObjStm")==0){
-                table[major].obj->stream->decompress();
-            }
-        }
     }
     // read object if compressed nonfree object
     else if (table[major].type==2) {
@@ -758,6 +762,7 @@ ObjectTable:: readObject(MYFILE *f, int major)
             return false;
         }
         StreamObj *obj_stm = table[obj_stm_no].obj->stream;
+        obj_stm->decompress();
         int n = obj_stm->dict["N"]->integer; // number of objects in this stream
         int first = obj_stm->dict["First"]->integer;// offset of first member inside stream
         // open stream as file, parse and get all objects inside it
@@ -818,24 +823,105 @@ void ObjectTable:: readObjects(MYFILE *f)
     }
 }
 
+int getXrefType(MYFILE *f)
+{
+    char line[LLEN];
+    skipspace(f);
+    long fpos = myftell(f);
+    if (myfgets(line, LLEN, f)==NULL){
+        return XREF_INVALID;
+    }
+    if (starts(line, "xref")) {
+        myfseek(f, fpos, SEEK_SET);
+        return XREF_TABLE;
+    }
+    // if it is indirect obj, then it is xref stream
+    myfseek(f, fpos, SEEK_SET);
+    Token tok;
+    if (tok.get(f) && tok.type==TOK_INT && tok.get(f) && tok.type==TOK_INT
+            && tok.get(f) && tok.type==TOK_ID){
+        myfseek(f, fpos, SEEK_SET);
+        return XREF_STREAM;
+    }
+    tok.freeData();
+    return XREF_INVALID;
+}
+
+bool ObjectTable:: read (MYFILE *f, size_t xref_pos)
+{
+    size_t pos=0;
+    int len=0, object_id=0, object_count=0;
+    char line[LLEN];
+    ObjectTableItem *elm;
+
+    if (myfseek(f, xref_pos, SEEK_SET)==-1){
+        return false;
+    }
+    // bad pdf may contain a newline before 'xref'
+    skipspace(f);
+    if (myfgets(line,LLEN,f)==NULL){
+        return false;
+    }
+    if (!starts(line, "xref")) {
+        return false;
+    }
+    //FILE *fd = fopen("xref", "wb");
+    while ((pos = myftell(f)) && myfgets(line,LLEN,f)!=NULL && len>=0){
+        char *entry = line;
+        while (isspace(*entry)) // fixes for leading spaces in xref table
+            entry++;
+        len = strlen(entry)-1;
+        if (len==-1) continue; // skip empty lines
+        while (len >= 0 && isspace((unsigned char)(entry[len]))){
+            entry[len] = 0;
+            --len;
+        }
+        if (strlen(entry)==XREF_ENT_LEN){
+            int field1, field2;
+            char obj_type;
+            if (sscanf(entry,"%d %d %c", &field1, &field2, &obj_type)!=3){
+                break;
+            }
+            //fprintf(fd, "%s\n", entry);
+            elm = &(this->table[object_id]);
+            if (elm->type==0){ // skip if already set by next xreftable
+                elm->major = object_id;
+                elm->type = obj_type=='f'? 0 : 1;
+                elm->offset = field1;
+                elm->minor = field2;
+            }
+            object_id++;
+            object_count--;
+        }
+        else {
+            int object_begin_tmp, object_count_tmp;
+            if (sscanf(entry,"%d %d", &object_begin_tmp, &object_count_tmp)!=2){
+                myfseek(f, pos, SEEK_SET);// seek before trailer keyword
+                break;
+            }
+            object_id = object_begin_tmp;
+            object_count = object_count_tmp;
+            this->expandToFit(object_begin_tmp + object_count);
+        }
+    }
+    //fclose(fd);
+    if (object_count!=0){
+        return false;
+    }
+    if (table[0].type!=0){//in some bad xref tables
+        debug("obj no 0 is not free");
+    }
+    return true;
+}
+
 // from PDF 1.5 the xreftable can be a stream in an indirect object.
 // the dictionary of stream is the trailer dictionary.
 // essential keys : Type, Size and W . Optional keys : Index, Prev
-bool ObjectTable:: getFromStream (MYFILE *f, PdfObject *p_trailer)
+bool ObjectTable:: read (PdfObject *stream, PdfObject *p_trailer)
 {
     //FILE *fd;
-    //fd = fopen("trailer", "wb");
     //fd = fopen("xref", "wb");
-    PdfObject content;
-    if (not content.read(f, NULL, NULL)) {
-        message(FATAL, "Unable to get xref from stream");
-    }
-    PdfObject *obj = content.indirect.obj;
-    p_trailer->setType(PDF_OBJ_DICT);
-    p_trailer->dict->merge(&obj->stream->dict);
-    //p_trailer->write(stdout); // write trailer dictionary to a file
-    //fflush(fd);
-    obj->stream->decompress();
+    stream->stream->decompress();
     // table_size is the max object number + 1
     int table_size = p_trailer->dict->get("Size")->integer;
     this->expandToFit(table_size);
@@ -865,7 +951,7 @@ bool ObjectTable:: getFromStream (MYFILE *f, PdfObject *p_trailer)
                 i+=row_len;
                 continue;
             }
-            char *row = obj->stream->stream + i;
+            char *row = stream->stream->stream + i;
             int field1 = w_arr[0] ? arr2int(row, w_arr[0]) : 1;// this field may be absent
             int field2 = arr2int(row+w_arr[0], w_arr[1]);
             int field3 = w_arr[2] ? arr2int(row+w_arr[0]+w_arr[1], w_arr[2]) : 0;
@@ -892,92 +978,8 @@ bool ObjectTable:: getFromStream (MYFILE *f, PdfObject *p_trailer)
             i += row_len;
         }
     }
+    //fflush(fd);
     //fclose(fd);
-    return true;
-}
-
-bool ObjectTable:: get (MYFILE *f, size_t xref_poz, char *line, PdfObject *p_trailer)
-{
-    size_t pos=0;
-    int len=0, object_id=0, object_count=0;
-
-    ObjectTableItem *elm;
-    if (myfseek(f, xref_poz, SEEK_SET)==-1){
-        return false;
-    }
-    // bad pdf may contain a newline before 'xref'
-    char c;
-    do { c = mygetc(f); }
-    while (isspace(c));
-    myungetc(f);
-    if (myfgets(line,LLEN,f)==NULL){
-        return false;
-    }
-    if (!starts(line, "xref")) {
-        myfseek(f, xref_poz, SEEK_SET);
-        return this->getFromStream(f, p_trailer);
-    }
-    //FILE *fd = fopen("xref", "wb");
-    while ((pos = myftell(f)) && myfgets(line,LLEN,f)!=NULL && len>=0){
-        char *entry = line;
-        while (isspace(*entry)) // fixes for leading spaces in xref table
-            entry++;
-        len = strlen(entry)-1;
-        if (len==-1) continue; // skip empty lines
-        while (len >= 0 && isspace((unsigned char)(entry[len]))){
-            entry[len] = 0;
-            --len;
-        }
-        if (strlen(entry)==XREF_ENT_LEN){
-            int field1, field2;
-            char obj_type;
-            if (sscanf(entry,"%d %d %c", &field1, &field2, &obj_type)!=3){
-                break;
-            }
-            //fprintf(fd, "%s\n", entry);
-            elm = &(this->table[object_id]);
-            if (elm->type==0){ // skip if already set by next xreftable
-                elm->major = object_id;
-                elm->type = obj_type=='f'? 0 : 1;
-                elm->offset = field1;
-                elm->minor = field2;
-            }
-            ++object_id;
-            --object_count;
-        }
-        else {
-            int object_begin_tmp, object_count_tmp;
-            if (sscanf(entry,"%d %d", &object_begin_tmp, &object_count_tmp)!=2){
-                break;
-            }
-            object_id = object_begin_tmp;
-            object_count = object_count_tmp;
-            this->expandToFit(object_id + object_count);
-        }
-    }
-    //fclose(fd);
-    if (object_count!=0){
-        return false;
-    }
-    if (table[0].type!=0){//in some bad xref tables
-        debug("obj no 0 is not free");
-    }
-    while (!starts(line,"trailer")){
-        pos = myftell(f);
-        if (myfgets(line,LLEN,f)==NULL){
-            message(ERROR, "trailer keyword not found");
-            return false;
-        }
-    }
-    // some pdfs may have space after trailer keyword instead of newline
-    // set seek pos just after trailer keyword
-    myfseek(f, pos+8, SEEK_SET);
-    if (p_trailer==NULL
-       || !p_trailer->read(f,this,NULL)
-       || p_trailer->type!=PDF_OBJ_DICT){
-        message(ERROR,"Could not read trailer dictionary");
-        return false;
-    }
     return true;
 }
 
@@ -997,7 +999,7 @@ PdfObject* ObjectTable:: getObject(int major, int minor)
 {
     if (major<(int)table.size() && minor==table[major].minor)
         return table[major].obj;
-    message(WARN, "could not get object from ObjectTable");
+    debug("warning : could not get object (%d,%d) from ObjectTable", major,minor);
     return NULL;
 }
 
@@ -1010,13 +1012,13 @@ void ObjectTable:: writeObjects (FILE *f)
             case 1:
                 table[i].offset = ftell(f);
                 if (fprintf(f,"%d %d obj\n", table[i].major, table[i].minor)<0){
-                    message(FATAL,"I/O error");
+                    message(FATAL,"writeObjects() : I/O error");
                 }
                 if (table[i].obj->write(f)<0){
-                    message(FATAL,"I/O error");
+                    message(FATAL,"writeObjects() : I/O error");
                 }
                 if (fprintf(f,"\nendobj\n")<0){
-                    message(FATAL,"I/O error");
+                    message(FATAL,"writeObjects() : I/O error");
                 }
                 break;
             default:
@@ -1033,11 +1035,15 @@ void ObjectTable:: writeXref (FILE *f)
     for (size_t i=0; i<table.size(); ++i){
         char type = (table[i].type) ? 'n' : 'f';
         if (fprintf(f,"%010d %05d %c \n", table[i].offset, table[i].minor, type)<0){
-            message(FATAL, "I/O error");
+            message(FATAL, "writeXref() : I/O error");
         }
     }
 }
 
+ObjectTableItem& ObjectTable:: operator[] (int index) {
+    assert(index >=0 && index<(int)table.size());
+    return table[index];
+}
 
 // *********** ------------- Token Parser ----------------- ***********
 
@@ -1403,3 +1409,120 @@ std::string get_correct_name(MYFILE *f, int start, int end)
     myfseek(f, pos, SEEK_SET);
     return std::string(out);
 }
+
+
+static int char2int(char input)
+{
+  if(input >= '0' && input <= '9')
+    return input - '0';
+  if(input >= 'A' && input <= 'F')
+    return input - 'A' + 10;
+  if(input >= 'a' && input <= 'f')
+    return input - 'a' + 10;
+  throw std::invalid_argument("Invalid input string");
+}
+
+// convert literal and hex pdfstring to normal string
+std::string pdfstr2bytes(String str, int *str_type)
+{
+    std::string out_str="";
+    if (str.data[0]=='(' && str.data[str.len-1]==')')
+    {
+        *str_type = BYTE_STR;
+
+        for (int i=1; i<str.len-1; i++)
+        {
+            if (str.data[i]=='\\') {
+                i++;
+                switch (str.data[i]) {
+                case '\\':
+                case '(':
+                case ')':
+                    out_str.push_back(str.data[i]);
+                    break;
+                case 'n':
+                    out_str.push_back('\n');
+                    break;
+                case 'r':
+                    out_str.push_back('\r');
+                    break;
+                case 't':
+                    out_str.push_back('\t');
+                    break;
+                case 'b':
+                    out_str.push_back('\b');
+                    break;
+                case 'f':
+                    out_str.push_back('\f');
+                    break;
+                case '\r':// ignore newline after '\'
+                    if (i+1<str.len-1 && str.data[i+1]=='\n')
+                        i++;
+                    break;
+                default:
+                    if (isdigit(str.data[i])) {// octal digit
+                        out_str.push_back('\\');
+                        out_str.push_back(str.data[i]);
+                    }
+                }
+            }
+            else {
+                out_str.push_back(str.data[i]);
+            }
+        }
+    }
+    else if (str.data[0]=='<' && str.data[str.len-1]=='>')
+    {
+        *str_type = HEX_STR;
+        // if no. of chars is odd, last char is assumed to be 0
+        if (str.len%2!=0)
+            str.data[str.len-1] = '0';
+
+        for (int i=1; i<str.len-1; i+=2)
+        {
+            int c = 16*char2int(str.data[i]) + char2int(str.data[i+1]);
+            out_str.push_back(c);
+        }
+    }
+    return out_str;
+}
+
+void bytes2pdfstr(std::string str, String &out_str, int str_type)
+{
+    std::string tmp_str;
+
+    if (str_type==HEX_STR){
+        tmp_str.push_back('<');
+        char hex[3];
+        for (unsigned int i=0; i<str.size(); i++){
+            snprintf(hex, 3, "%02x", str[i]);
+            tmp_str.push_back(hex[0]);
+            tmp_str.push_back(hex[1]);
+        }
+        tmp_str.push_back('>');
+    }
+    else {//BYTE_STR
+        tmp_str.push_back('(');
+        for (unsigned int i=0; i<str.size(); i++){
+            char c = str[i];
+            switch (c) {
+                case '(':
+                case ')':
+                    tmp_str.push_back('\\');
+                    tmp_str.push_back(c);
+                    break;
+                case '\\':
+                    tmp_str.push_back('\\');
+                    if (i+1<str.size() && isdigit(str[i+1]))// octal
+                        break;
+                default:
+                    tmp_str.push_back(c);
+            }
+        }
+        tmp_str.push_back(')');
+    }
+    if (out_str.len < (int)tmp_str.size())
+        out_str.data = (char*)realloc(out_str.data, tmp_str.size());
+    memcpy(out_str.data, tmp_str.data(), tmp_str.size());
+    out_str.len = tmp_str.size();
+};

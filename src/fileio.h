@@ -1,6 +1,7 @@
 #pragma once
 /* This file is a part of pdfcook program, which is GNU GPLv2 licensed */
 #include <cstdio>
+#include <cctype> // toupper() isspace() etc
 
 typedef struct {
     FILE *f;
@@ -42,3 +43,11 @@ MYFILE * stropen(const char *str);
 // create a MYFILE any stream with given len
 MYFILE * streamopen(const char *str, size_t len);
 
+inline void skipspace(MYFILE *f) {
+    int c;
+    while ((c = mygetc(f))!=EOF && isspace(c));
+    if (c!=EOF)
+        myungetc(f);
+}
+
+bool file_exist (const char *name);

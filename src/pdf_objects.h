@@ -8,9 +8,9 @@
 
 #define PDF_NAME_MAX_LEN 255
 #define PDF_ID_MAX_LEN 255
-#define XREF_ENT_LEN 18
+#define XREF_ENT_LEN 18// [10 digit obj no]<space>[5 digit gen no]<space>[f or n]
 #define LLEN 256
-#define PDF_TRAILER_OFFSET 64
+#define STARTXREF_OFFSET 64 // how much to seek from end to read startxref
 
 /*
   PDF includes eight basic types of objects: Boolean values, Integer and Real numbers,
@@ -27,11 +27,19 @@ typedef struct {
     int len;// string length excluding null character
 } String;
 
+enum {
+    BYTE_STR,
+    HEX_STR
+};
+
 typedef bool    BoolObj;// keyword 'true' and 'false'
 typedef int     IntObj;
 typedef double  RealObj;// eg. 2.0, 0.2, 2., .2, +2.0, -2.0, -2., -.2 etc
 typedef char*   NameObj; // name starting with '/' , eg - /Page , /Count
 typedef String  StringObj; // (abcd) or <eaffbb00>
+
+std::string pdfstr2bytes(String str, int *str_type);
+void        bytes2pdfstr(std::string str, String &out_str, int str_type);
 
 
 typedef std::vector<PdfObject*>::iterator ArrayIter;
@@ -72,11 +80,7 @@ public:
     int         write (FILE *f);
     MapIter     begin();
     MapIter     end();
-    PdfObject* operator[] (std::string key) {
-        if (dict.count(key) < 1)
-            return NULL;
-        return dict[key];
-    }
+    PdfObject* operator[] (std::string key);
 };
 
 
@@ -85,7 +89,7 @@ class StreamObj
 public:
     size_t begin;//pos where stream begins in file
     size_t len;
-    bool compressed;
+    bool decompressed;
     DictObj dict;
     char *stream;
     int write(FILE *f);
@@ -141,6 +145,13 @@ public:
     }
 */
 
+enum {
+    XREF_INVALID,
+    XREF_TABLE,
+    XREF_STREAM
+};
+
+int getXrefType(MYFILE *f);
 
 
 typedef struct {
@@ -166,16 +177,14 @@ public:
     void expandToFit(size_t size);
     int addObject (PdfObject *obj);
     PdfObject* getObject(int major, int minor);
-    bool get (MYFILE *f, size_t xref_poz, char *line, PdfObject *p_trailer);
-    bool getFromStream (MYFILE *f, PdfObject *p_trailer);
+    bool read (MYFILE *f, size_t xref_pos);
+    bool read (PdfObject *stream, PdfObject *p_trailer);
     bool readObject(MYFILE *f, int major);
     void readObjects(MYFILE *f);
     void writeObjects(FILE *f);
     void writeXref (FILE *f);
 
-    ObjectTableItem& operator[] (int index) {
-        return table[index];
-    }
+    ObjectTableItem& operator[] (int index);
 };
 
 
@@ -208,6 +217,7 @@ public:
 #define isInt(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_INT))
 #define isReal(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_REAL))
 #define isName(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_NAME))
+#define isString(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_STR))
 #define isArray(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_ARRAY))
 #define isDict(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_DICT))
 #define isStream(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_STREAM))

@@ -58,6 +58,9 @@ PdfDocument:: PdfDocument()
     // set default paper size
     paper.right = Point(595, 842);
     bbox = paper;
+    encrypted = false;
+    have_encrypt_info = false;
+    decryption_supported = false;
 }
 
 PdfDocument:: ~PdfDocument()
@@ -89,10 +92,7 @@ bool PdfDocument:: getPdfHeader (MYFILE *f, char *line)
         endptr++;
         minor = strtol(endptr, &endptr, 10);
     }
-    if (*endptr!='\0'){
-        message(WARN, "Missing new line after PDF head");
-    }
-    if (major<1 || minor<0 || (major==1 && minor<4) ){
+    if (major<1 || minor<0 || (major==1 && minor<4) ){// minimum version is set 1.4
         major = 1;
         minor = 4;
     }
@@ -103,39 +103,104 @@ bool PdfDocument:: getPdfHeader (MYFILE *f, char *line)
 
 bool PdfDocument:: getPdfTrailer (MYFILE *f, char *line, long offset)
 {
-    unsigned char buf[PDF_TRAILER_OFFSET + 1];
-    int i, n, c;
-    unsigned char * p;
+    // read from end of file and find last xref offset
+    if (offset==-1){
+        int i, n, c;
+        char *p;
+        char buff[STARTXREF_OFFSET + 1];
 
-    if (offset==-1){ //first trailer, seek end and find trailer offset
-        if (myfseek(f, -1 * PDF_TRAILER_OFFSET, SEEK_END)==-1){
-            fprintf(stderr,"Seek error\n");
+        if (myfseek(f, -1*STARTXREF_OFFSET, SEEK_END)==-1){
+            message(ERROR, "Seek error");
             return false;
         }
-        for (n=0; n<PDF_TRAILER_OFFSET && (c=mygetc(f))!=EOF; ++n){
-            buf[n] = c;
+        for (n=0; n<STARTXREF_OFFSET && (c=mygetc(f))!=EOF; ++n){
+            buff[n] = c;
         }
-        buf[n] = '\0';
+        buff[n] = '\0';
         // find startxref
         for (i = n-9; i >= 0; --i) {
-            if (!strncmp((char *)(buf+i), "startxref", 9))
+            if (!strncmp(buff+i, "startxref", 9))
                 break;
         }
         if (i < 0) {
             message(FATAL,"'startxref' not found");
             return false;
         }
-        for (p = buf+i+9; isspace(*p); ++p)
-            offset = atol((char*)p);
+        for (p = buff+i+9; isspace(*p); p++);
+        offset = atol(p);
     }
+    myfseek(f, offset, SEEK_SET);
 
-    PdfObject *p_trailer = new PdfObject();
-    if (not obj_table.get(f, offset, line, p_trailer)){
-        message(FATAL,"xreftable read error");
+    int xref_type = getXrefType(f);
+    if (xref_type==XREF_INVALID){
+        message(ERROR, "failed to determine xref type");
         return false;
     }
+
+    if (xref_type==XREF_TABLE){
+        if (not obj_table.read(f, offset)){
+            message(FATAL,"xreftable read error");
+        }
+        // skip trailer keyword
+        long fpos;
+        do {
+            fpos = myftell(f);
+            if (myfgets(line,LLEN,f)==NULL){
+                message(ERROR, "'trailer' keyword not found");
+                return false;
+            }
+        }
+        while (!starts(line,"trailer"));
+        // some pdfs may have space after trailer keyword instead of newline
+        // set seek pos just after trailer keyword
+        myfseek(f, fpos+8, SEEK_SET);
+    }
+    // read trailer dictionary
+    PdfObject content;
+    if (not content.read(f, NULL, NULL)) {
+        message(FATAL, "Unable to read trailer object");
+    }
+    PdfObject *p_trailer = new PdfObject();
+
+    if (content.type==PDF_OBJ_INDIRECT && content.indirect.obj->type==PDF_OBJ_STREAM){
+        p_trailer->setType(PDF_OBJ_DICT);
+        p_trailer->dict->merge(&content.indirect.obj->stream->dict);
+    }
+    else if (content.type==PDF_OBJ_DICT) {
+        p_trailer->copyFrom(&content);
+    }
+    else {
+        debug("trailer obj is neither dict nor stream");
+        delete p_trailer;
+        return false;
+    }
+    if (xref_type==XREF_STREAM) {
+        if (not obj_table.read(content.indirect.obj, p_trailer)){
+            message(FATAL,"xreftable read error");
+            return false;
+        }
+    }
     if (p_trailer->dict->contains("Encrypt")){
-        message(FATAL,"This pdf is encrypted, sorry, I cannot work with it");
+        if (xref_type==XREF_STREAM){
+            message(FATAL, "Can not handle encrypted PDF with Xref stream");
+        }
+        if (!have_encrypt_info) {
+            encrypted = true;
+            PdfObject *encrypt_dict = p_trailer->dict->get("Encrypt");
+
+            if (isRef(encrypt_dict)){
+                if (not obj_table.readObject(f, encrypt_dict->indirect.major))
+                    return false;
+                encrypt_dict = obj_table.getObject(encrypt_dict->indirect.major,
+                                                    encrypt_dict->indirect.minor);
+            }
+            if (isDict(encrypt_dict)){
+                crypt.getEncryptionInfo(encrypt_dict, p_trailer);
+                have_encrypt_info = true;
+                decryption_supported = crypt.decryptionSupported();
+            }
+        }
+        p_trailer->dict->deleteItem("Encrypt");
     }
     PdfObject *prev = p_trailer->dict->get("Prev");
     if (prev){
@@ -146,6 +211,7 @@ bool PdfDocument:: getPdfTrailer (MYFILE *f, char *line, long offset)
         if (not getPdfTrailer(f, line, prev->integer)){
             return false;
         } // this->trailer = Prev trailer, p_trailer = current trailer
+        p_trailer->dict->deleteItem("Prev");
     }
     if (not repair_mode)
         p_trailer->dict->filter(trailer_filter);
@@ -177,19 +243,69 @@ bool PdfDocument:: open (const char *fname)
     MYFILE *f;
     char iobuffer[LLEN];
 
+    if (!file_exist(fname)){
+        message(FATAL,"File '%s' not found", fname);
+    }
     if ((f=myfopen(fname, "rb"))==NULL){
         return false;
     }
-    if (not getPdfHeader(f,iobuffer) || not getPdfTrailer(f,iobuffer,-1)){
+    filename = fname;
+    if (not getPdfHeader(f,iobuffer)){
+        message(ERROR, "failed to read PDF header");
+        myfclose(f);
         return false;
     }
     message(LOG, fname);
-    debug("    Version : %d.%d", v_major, v_minor);
-    debug("    Objects : %d", obj_table.table.size());
+    if (not getPdfTrailer(f,iobuffer,-1)){
+        message(ERROR, "failed to read PDF trailer");
+        myfclose(f);
+        return false;
+    }
+    if (encrypted){
+        if (have_encrypt_info){
+            decrypt("");// if user password is empty, we can decrypt it
+            return true;
+        }
+        return false;
+    }
     obj_table.readObjects(f);
     getAllPages(f);
     myfclose(f);
 
+    debug("    Version : %d.%d", v_major, v_minor);
+    debug("    Objects : %d", obj_table.table.size());
+    message(LOG, "    Pages : %d", page_list.count());
+    return true;
+}
+
+bool PdfDocument:: decrypt(const char *password)
+{
+    MYFILE *f;
+    if ((f=myfopen(filename, "rb"))==NULL){
+        return false;
+    }
+    if (!decryption_supported){
+        message(ERROR, "decryption is not supported for this PDF");
+        return false;
+    }
+    // if object table is loaded, decrypt all objects in object table
+    if (not crypt.authenticate(password)){
+        if (strlen(password)!=0)
+            message(ERROR, "Incorrect password !");
+        return false;
+    }
+    obj_table.readObjects(f);
+
+    for (int obj_no=0; obj_no<obj_table.count(); obj_no++) {
+        if (obj_table[obj_no].obj!=NULL) {
+            crypt.decryptIndirectObject(obj_table[obj_no].obj, obj_no, obj_table[obj_no].minor);
+        }
+    }
+    encrypted = false;
+    getAllPages(f);
+    myfclose(f);
+    debug("    Version : %d.%d", v_major, v_minor);
+    debug("    Objects : %d", obj_table.table.size());
     message(LOG, "    Pages : %d", page_list.count());
     return true;
 }
@@ -204,7 +320,7 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
     pages = obj_table.getObject(major, minor);
     pages_type = pages->dict->get("Type");
     if (not isName(pages_type)){
-        message(FATAL,"Pages/Page dictionary dosn't contain Type entry");
+        message(FATAL,"Pages or Page dictionary dosn't contain /Type entry");
     }
     /*Pages node*/
     if (strcmp("Pages", pages_type->name)==0){
@@ -226,12 +342,12 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
             kids = obj_table.getObject(kids->indirect.major, kids->indirect.minor);
         }
         if (not isArray(kids)){
-            message(FATAL,"Pages dictionary dosn't contain Kids entry");
+            message(FATAL,"Pages dictionary doesn't contain /Kids entry");
         }
         resources = pages->dict->get("Resources");
         for (auto kid=kids->array->begin(); kid!=kids->array->end(); kid++){
             if ((*kid)->type!=PDF_OBJ_INDIRECT_REF){
-                message(FATAL,"Kids array doesn't contain indirect ref objects");
+                message(FATAL,"Kids array item is not indirect ref object");
             }
             // add resources of Pages Node to child page Resources
             if (resources){
@@ -795,7 +911,7 @@ static void pdf_page_to_xobj (PdfPage *page)
             PdfObject *obj = (*it);
             tmp_stream = doc->obj_table.getObject(obj->indirect.major, obj->indirect.minor);//decompressed stream
             if (not tmp_stream->stream->decompress() ){
-                message(FATAL, "I haven't filter for decompress stream");
+                message(FATAL, "Can not decompress content stream");
             }
             pdf_stream_append(new_stream, " ", 1);
             pdf_stream_append(new_stream, tmp_stream->stream->stream,
