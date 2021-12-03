@@ -29,6 +29,7 @@ Then to build run...
 * Transform pages (rotate, flip, move)  
 * Booklet format arrange  
 * 2 or 4 pages per page (2-up, 4-up)  
+* More readable output syntax for easy debugging  
 
 ### Usage
 See manual page (PDF or man page) for detailed usage  

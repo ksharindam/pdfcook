@@ -6,7 +6,6 @@
 #include "debug.h"
 #include "pdf_filters.h"
 
-std::string get_correct_name(MYFILE *f, int start, int end);
 
 // *********** ------------- Array Object ----------------- ***********
 //allows range based for loop
@@ -260,6 +259,11 @@ StreamObj:: ~StreamObj() {
 
 // *********** -------------- Pdf Object ----------------- ***********
 
+enum {
+    DICT_KEY,
+    DICT_VAL
+};
+
 PdfObject:: PdfObject() {
     type = PDF_OBJ_UNKNOWN;
 }
@@ -279,6 +283,9 @@ PdfObject:: setType(ObjectType obj_type)
     case PDF_OBJ_STREAM:
         stream = new StreamObj();
         break;
+    case PDF_OBJ_INDIRECT:
+        indirect.obj = new PdfObject();
+        break;
     default:
         break;
     }
@@ -297,23 +304,25 @@ PdfObject:: readFromString (const char *str)
     return retval;
 }
 
-// to read an obj at particular pos, seek file in that pos and call this function
+/*To read an obj at particular pos, seek file in that pos and call this function.
+  Returns false if object is completely unusable and should be discarded.
+  Returns true if obj is usable, even if not read properly.
+  Dictionary and Array return false only if ending bracket not found before reaching EOF.
+*/
 bool
 PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
 {
     uint stream_len = 0;
-    PdfObject *item_obj, *next_obj, *len_obj=NULL;
-    std::map<std::string, PdfObject*>  new_dict;
-    size_t fpos, key_pos, nextkey_pos, val_pos;
+    size_t fpos/*, key_pos, nextkey_pos, val_pos*/;
     Token tok;
     if (last_tok==NULL){
         last_tok=&tok;
     }
     //printf("get obj %ld\n", myftell(f));
-    //this->type=PDF_OBJ_UNKNOWN;//see constructor
     while (last_tok->get(f)){
         switch (last_tok->type){
         case TOK_INT://maybe integer, indirect, or indirect reference obj
+        {
             this->setType(PDF_OBJ_INT);
             this->integer = last_tok->integer;
             if (last_tok->sign){//it is integer, not indirect object
@@ -325,7 +334,6 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                 last_tok->freeData();
                 if ( myfseek(f, fpos, SEEK_SET)==EOF ){
                     message(FATAL,"myfseek()  error in file %s at line %d", __FILE__, __LINE__);
-                    return false;
                 }
                 return true;
             }
@@ -334,8 +342,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             if (last_tok->type!=TOK_ID){
                 last_tok->freeData();
                 if (myfseek(f,fpos,SEEK_SET)==EOF){
-                    message(FATAL,"myfseek()  error at in file %s line  %d",__FILE__, __LINE__);
-                    return false;
+                    message(FATAL,"myfseek()  error in file %s at line  %d",__FILE__, __LINE__);
                 }
                 return true;
             }
@@ -348,74 +355,83 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             }
             if (strcmp(last_tok->id,"obj")==0){
                 this->setType(PDF_OBJ_INDIRECT);
-                this->indirect.obj = new PdfObject();
                 if (not this->indirect.obj->read(f,xref,last_tok)){
-                    message(WARN, "read indirect obj failed : ID %d %d", indirect.major, indirect.minor);
+                    message(WARN, "IndirectObj %d %d : failed to read", indirect.major, indirect.minor);
                     return false;
                 }
                 last_tok->get(f);
                 if (last_tok->type!=TOK_ID || strcmp(last_tok->id,"endobj")!=0){
-                    message(WARN, "endobj keyword not found : indirect obj %d %d", indirect.major, indirect.minor);
+                    debug("IndirectObj %d %d : endobj keyword not found", indirect.major, indirect.minor);
                 }
                 return true;
             }
             // two int numbers and a TOK_ID next to it other than 'R' and 'obj'
             if (myfseek(f,fpos,SEEK_SET)==EOF){
                 message(FATAL,"myfseek()  error in file %s at line %d",__FILE__,__LINE__);
-                return false;
             }
             return true;
+        }
         case TOK_REAL:
+        {
             this->setType(PDF_OBJ_REAL);
             this->real = last_tok->real;
             return true;
+        }
         case TOK_NAME:
+        {
             this->setType(PDF_OBJ_NAME);
             this->name = strdup(last_tok->name);
             return true;
+        }
         case TOK_STR:
+        {
             this->setType(PDF_OBJ_STR);
             this->str = last_tok->str;
             //this->str.type = last_tok->str.type;
             return true;
+        }
         case TOK_BDICT:// dictionary or stream obj
-            nextkey_pos = myftell(f);
-            next_obj = new PdfObject();
-            next_obj->read(f, xref, last_tok);
-            // next_obj must be a name obj
-            while (next_obj->type==PDF_OBJ_NAME) {
-                std::string key(next_obj->name);
-                // get value of key
-                item_obj = new PdfObject();
-                item_obj->read(f, xref, last_tok);
-                // next obj should be a name obj or TOK_EDICT
-                key_pos = nextkey_pos;
-                nextkey_pos = myftell(f);
-                next_obj->clear();
-                next_obj->read(f, xref, last_tok);
-                // This part wont be required if some shitty pdf writers did not
-                // put space inside pdf name object. Here we are checking if next obj
-                // is a name obj, if not, read objs until we get a name obj, then add
-                // prev key and value (obj just before next name obj) to dict map
-                if ( item_obj->type==PDF_OBJ_UNKNOWN || next_obj->type!=PDF_OBJ_NAME ){
-                    // now, either we have reached dict end, or name obj is invalid
-                    while (last_tok->type!=TOK_EDICT/*&& last_tok->type==TOK_EOF*/) {
-                        val_pos = nextkey_pos;// next obj is not name obj, means it was val
-                        nextkey_pos = myftell(f);
-                        // current name obj is invalid, find next name obj
-                        delete item_obj;
-                        item_obj = next_obj;
-                        next_obj = new PdfObject();
-                        next_obj->read(f, xref, last_tok);
-                        if (next_obj->type==PDF_OBJ_NAME || last_tok->type==TOK_EDICT){
-                            key = get_correct_name(f, key_pos, val_pos);// replaces spaces with #20
-                            break;
-                        }
+        {
+            std::map<std::string, PdfObject*>  new_dict;
+            PdfObject *obj, *val=NULL, *len_obj=NULL;
+            std::string key;
+            int next_obj = DICT_KEY;
+            while ((obj = new PdfObject())) {
+                if (not obj->read(f, xref, last_tok)) {
+                    delete obj;
+                    if (last_tok->type==TOK_EDICT or last_tok->type==TOK_EOF){
+                        if (val)
+                            new_dict[key] = val;
+                        break;
                     }
+                    next_obj = DICT_KEY;// if could not read key or val, next object should be key
                 }
-                new_dict[key] = item_obj;
+                else if (next_obj==DICT_KEY){
+                    if (obj->type==PDF_OBJ_NAME){
+                        if (val){
+                            new_dict[key] = val;
+                            val = NULL;
+                        }
+                        key = obj->name;
+                        next_obj = DICT_VAL;
+                    }
+                    else if (val) {// have read object, but it is not PdfName
+                        delete val;// previous val is invalid
+                        val = NULL;
+                    }
+                    delete obj;
+                }
+                else {// next_obj==DICT_VAL
+                    val = obj;
+                    next_obj = DICT_KEY;
+                }
             }
-            delete next_obj;
+            if (last_tok->type==TOK_EOF){// last token should be TOK_EDICT
+                debug("Dictionary : ending bracket not found");
+                this->setType(PDF_OBJ_DICT);
+                this->dict->setDict(new_dict);
+                return false;
+            }
             fpos = myftell(f);
             // if dict has stream keyword, then it is stream object
             if ( (not last_tok->get(f))
@@ -430,7 +446,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             this->stream->dict.setDict(new_dict);
             // if stream length is indirect obj, get length as integer
             if (new_dict.count("Length")==0){
-                message(WARN, "stream obj does not have /Length key");
+                message(WARN, "StreamObj : /Length key not found");
                 return false;
             }
             len_obj = new_dict["Length"];
@@ -493,24 +509,34 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             if (not last_tok->get(f)
                 || last_tok->type!=TOK_ID
                 || strcmp(last_tok->id,"endstream")!=0){
-                message(WARN, "endstream keyword not found");
+                message(WARN, "StreamObj : endstream keyword not found");
                 return false;
             }
             return true;
+        }
         case TOK_BARRAY:
+        {
             this->setType(PDF_OBJ_ARRAY);
-            item_obj = new PdfObject();
-            while (item_obj->read(f,xref,last_tok)){
-                this->array->append(item_obj);
-                item_obj = new PdfObject();
+            // if start bracket is found, read until end bracked or EOF is reached
+            PdfObject *item_obj;
+            while ((item_obj = new PdfObject())){
+                if (item_obj->read(f,xref,last_tok)){
+                    this->array->append(item_obj);
+                }
+                else {
+                    delete item_obj;
+                    if (last_tok->type==TOK_EARRAY || last_tok->type==TOK_EOF)
+                        break;
+                }
             }
-            delete item_obj;
             if (last_tok->type!=TOK_EARRAY){
                 message(WARN, "Array : ending bracket not found");
                 return false;
             }
             return true;
+        }
         case TOK_ID:
+        {
             if (strcmp(last_tok->id,"null")==0){
                 this->setType(PDF_OBJ_NULL);
                 return true;
@@ -527,6 +553,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             }
             debug("unknown id '%s'", last_tok->id);
             return false;
+        }
         case TOK_EOF:
         case TOK_EARRAY:
         case TOK_EDICT:
@@ -1380,35 +1407,6 @@ Token:: freeData()
     }
 }
 
-// read file from start pos to end pos and get pdf name obj,
-// then replace spaces with #20
-std::string get_correct_name(MYFILE *f, int start, int end)
-{
-    size_t pos = myftell(f);
-
-    char src[256];
-    char out[256] = {};
-
-    int len = end - start;
-    assert(len<256);
-
-    myfseek(f, start, SEEK_SET);
-    myfread(src, 1, len, f);
-
-    for (end=len; end>0 && src[end-1]==' '; end--);
-    for (start=0; start<end && src[start++]!='/'; );
-
-    for (int i=0, j=start; j<end; i++, j++) {
-        out[i] = src[j];
-        if (out[i]==' ') {
-            out[i++] = '#';
-            out[i++] = '2';
-            out[i] = '0';
-        }
-    }
-    myfseek(f, pos, SEEK_SET);
-    return std::string(out);
-}
 
 
 static int char2int(char input)

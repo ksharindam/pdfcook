@@ -114,6 +114,8 @@ typedef enum {
     PDF_OBJ_INDIRECT, PDF_OBJ_INDIRECT_REF, PDF_OBJ_NULL, PDF_OBJ_UNKNOWN
 } ObjectType;
 
+// can't store objects inside union that contain std::map, vector (eg. DictObj).
+// So storing pointers of these objects inside union.
 
 class PdfObject
 {
@@ -125,10 +127,10 @@ public:
         RealObj     real;
         StringObj   str;
         NameObj     name;
-        DictObj     *dict;// can't store std::map, vector etc inside union
-        ArrayObj    *array;// so storing their pointers
-        StreamObj   *stream;
-        IndirectObj indirect;
+        DictObj     *dict;// always allocates dict
+        ArrayObj    *array;// always allocates array
+        StreamObj   *stream;// always allocates stream, may allocate stream->stream
+        IndirectObj indirect;// always allocates indirect.obj if PDF_OBJ_INDIRECT
     };
     PdfObject();
     void setType(ObjectType obj_type);
