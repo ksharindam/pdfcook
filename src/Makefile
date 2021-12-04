@@ -28,7 +28,7 @@ $(BUILD_DIR)/%.o: %.cpp
 	${CXX} ${CXXFLAGS} ${INCLUDES} -c $< -o $@
 
 
-install:
+install: pdfcook
 	install pdfcook /usr/local/bin
 
 uninstall:

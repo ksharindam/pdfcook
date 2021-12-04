@@ -337,24 +337,33 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
         }
         else bbox_is_cropbox = true;
         // get all childs, each child may be a Pages Node, or a Page Object
-        kids = pages->dict->get("Kids");
-        if (kids->type==PDF_OBJ_INDIRECT_REF){
-            kids = obj_table.getObject(kids->indirect.major, kids->indirect.minor);
-        }
+        kids = derefObject(pages->dict->get("Kids"), obj_table);
+
         if (not isArray(kids)){
             message(FATAL,"Pages dictionary doesn't contain /Kids entry");
         }
-        resources = pages->dict->get("Resources");
-        for (auto kid=kids->array->begin(); kid!=kids->array->end(); kid++){
+        resources = derefObject(pages->dict->get("Resources"), obj_table);
+
+        for (auto kid=kids->array->begin(); kid!=kids->array->end(); kid++)
+        {
             if ((*kid)->type!=PDF_OBJ_INDIRECT_REF){
                 message(FATAL,"Kids array item is not indirect ref object");
             }
             // add resources of Pages Node to child page Resources
-            if (resources){
+            if (isDict(resources)){
                 child_pg = obj_table.getObject((*kid)->indirect.major, (*kid)->indirect.minor);
                 // child has Resources entry, merge with parent's Resources Dict
                 if ((child_resources = child_pg->dict->get("Resources"))!=NULL){
-                    child_resources->dict->merge(resources->dict);
+                    child_resources = derefObject(child_resources, obj_table);
+                    assert(child_resources->type==PDF_OBJ_DICT);
+                    // both resources may be same indirect obj, no need to merge then
+                    if (resources != child_resources){
+                        PdfObject *new_res = new PdfObject();
+                        new_res->copyFrom(resources);
+                        new_res->dict->merge(child_resources->dict);
+                        child_pg->dict->deleteItem("Resources");
+                        child_pg->dict->add("Resources", new_res);
+                    }
                 }
                 else {// child doesn't have Resources entry, copy all Resources from parent
                     resources_tmp = child_pg->dict->newItem("Resources");
@@ -832,23 +841,14 @@ stream_to_xobj (PdfObject *contents, PdfObject *page, Rect &bbox, ObjectTable &o
     xobj->stream->dict.merge(tmp->dict);
     delete tmp;
     // copy page resources to xobject resources
-    pg_res = page->dict->get("Resources");
+    pg_res = derefObject(page->dict->get("Resources"), obj_table);
 
     if (pg_res!=NULL){
+        assert(pg_res->type==PDF_OBJ_DICT);
         xobj_res = xobj->stream->dict.newItem("Resources");
-
-        switch(pg_res->type){
-        case PDF_OBJ_INDIRECT_REF:
-            pg_res = obj_table.getObject(pg_res->indirect.major, pg_res->indirect.minor);
-        case PDF_OBJ_DICT:
-            xobj_res->copyFrom(pg_res);
-            break;
-        default:
-            assert(0);
-        }
+        xobj_res->copyFrom(pg_res);
     }
-    if (not repair_mode)
-        xobj->stream->dict.filter(xobject_filter);
+    xobj->stream->dict.filter(xobject_filter);
     return obj_table.addObject(xobj);
 }
 

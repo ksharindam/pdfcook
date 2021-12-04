@@ -71,7 +71,7 @@ public:
     bool        contains (std::string key);
     PdfObject*  get (std::string key);
     void        add (std::string key, PdfObject *val);
-    PdfObject*  newItem (std::string key);//create new PdfObject, and add
+    PdfObject*  newItem (std::string key);// if val exist, clear and return obj, else create new PdfObject
     void        deleteItem (std::string key);
     void        deleteItems();
     void        setDict (std::map<std::string, PdfObject*> &map);
@@ -233,3 +233,12 @@ public:
 #define isDict(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_DICT))
 #define isStream(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_STREAM))
 #define isRef(obj) (((obj)!=NULL) && ((obj)->type==PDF_OBJ_INDIRECT_REF))
+
+// dereferencing a pdf object
+inline PdfObject* derefObject(PdfObject *obj, ObjectTable &obj_table)
+{
+    while (isRef(obj)){
+        obj = obj_table.getObject(obj->indirect.major, obj->indirect.minor);
+    }
+    return obj;
+}

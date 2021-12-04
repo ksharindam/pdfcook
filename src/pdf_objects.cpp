@@ -75,10 +75,11 @@ PdfObject* DictObj:: newItem (std::string key)
 }
 
 // hard copy all items from src_dict to this, overwrite if exists
+// this dict and src_dict must be different object, otherwise will cause segfault
 void DictObj:: merge(DictObj *src_dict)
 {
     for (auto it : src_dict->dict) {
-        // if val of key is dict obj, the merge the dicts
+        // if val of key is dict obj, merge the dicts
         if (this->contains(it.first) && dict[it.first]->type==PDF_OBJ_DICT &&
                                         it.second->type==PDF_OBJ_DICT) {
             dict[it.first]->dict->merge(it.second->dict);
@@ -450,31 +451,18 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                 return false;
             }
             len_obj = new_dict["Length"];
-            switch (len_obj->type)
-            {
-            case PDF_OBJ_INT:
-                stream_len = len_obj->integer;
-                break;
-            case PDF_OBJ_INDIRECT_REF:
-            {
+            if (len_obj->type==PDF_OBJ_INDIRECT_REF){
                 fpos = myftell(f);
                 xref->readObject(f, len_obj->indirect.major);
-                PdfObject *ref_obj = xref->table[len_obj->indirect.major].obj;
-                if (ref_obj->type == PDF_OBJ_INT) {
-                    stream_len = ref_obj->integer;
-                }
-                else {
-                    message(FATAL, "Stream length is not int");
-                }
+                len_obj = xref->table[len_obj->indirect.major].obj;
                 myfseek(f, fpos, SEEK_SET);
-                break;
             }
-            default:
+            if (!isInt(len_obj)){
                 debug("StreamObj : invalid stream length obj type %d", len_obj->type);
                 return false;
             }
-            this->stream->dict.dict.erase("Length");// does not delete PdfObject
-            delete len_obj;
+            stream_len = len_obj->integer;
+            this->stream->dict.deleteItem("Length");
             // read stream after the newline
             switch (mygetc(f)){
                 case EOF:
