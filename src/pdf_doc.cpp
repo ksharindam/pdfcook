@@ -532,6 +532,7 @@ bool PdfDocument:: save (const char *filename)
     pobj = trailer->dict->get("Size");
     pobj->integer = obj_table.count();
     trailer->write(f);
+    // startxref, xref offset, and %%EOF must be in three separate lines
     fprintf(f, "\nstartxref\n%ld\n%%%%EOF\n", xref_poz);
     fclose(f);
     return true;

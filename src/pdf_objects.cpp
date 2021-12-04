@@ -356,7 +356,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             if (strcmp(last_tok->id,"obj")==0){
                 this->setType(PDF_OBJ_INDIRECT);
                 if (not this->indirect.obj->read(f,xref,last_tok)){
-                    message(WARN, "IndirectObj %d %d : failed to read", indirect.major, indirect.minor);
+                    debug("IndirectObj %d %d : failed to read", indirect.major, indirect.minor);
                     return false;
                 }
                 last_tok->get(f);
@@ -446,7 +446,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             this->stream->dict.setDict(new_dict);
             // if stream length is indirect obj, get length as integer
             if (new_dict.count("Length")==0){
-                message(WARN, "StreamObj : /Length key not found");
+                debug("StreamObj : /Length key not found");
                 return false;
             }
             len_obj = new_dict["Length"];
@@ -470,7 +470,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                 break;
             }
             default:
-                message(WARN, "Can't read stream length of type %d", len_obj->type);
+                debug("StreamObj : invalid stream length obj type %d", len_obj->type);
                 return false;
             }
             this->stream->dict.dict.erase("Length");// does not delete PdfObject
@@ -509,7 +509,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             if (not last_tok->get(f)
                 || last_tok->type!=TOK_ID
                 || strcmp(last_tok->id,"endstream")!=0){
-                message(WARN, "StreamObj : endstream keyword not found");
+                debug("StreamObj : endstream keyword not found");
                 return false;
             }
             return true;
@@ -530,7 +530,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                 }
             }
             if (last_tok->type!=TOK_EARRAY){
-                message(WARN, "Array : ending bracket not found");
+                debug("Array : ending bracket not found");
                 return false;
             }
             return true;
@@ -752,41 +752,33 @@ ObjectTable:: readObject(MYFILE *f, int major)
 {
     if (table[major].obj != NULL) return true;// already read
     // read object if nonfree object
-    if (table[major].type==1) {
-        PdfObject obj;
+    if (table[major].type==NONFREE_OBJ)
+    {
         int offset = table[major].offset;
-        if (myfseek(f, offset, SEEK_SET)){
-            message(WARN,"myfseek()  error, pos %d", offset);
-            return false;
+        // some bad xref table may have offset==0, or offset > file size
+        if (offset==0 or myfseek(f, offset, SEEK_SET)){
+            debug("object %d : invalid offset %d", major, offset);
+            goto fail;
         }
-        if (not obj.read(f, this, NULL)){
-            message(WARN,"PdfObject::read() failed: nonfree obj %d", major);
-            table[major].obj = new PdfObject();
-            table[major].obj->type = PDF_OBJ_NULL;
-            return false;
-        }
-        if (obj.type!=PDF_OBJ_INDIRECT){
-            message(WARN, "Object %d isn't indirect", major);
-            table[major].obj = new PdfObject();
-            table[major].obj->type = PDF_OBJ_NULL;
-            return false;
+        PdfObject obj;
+        if (!obj.read(f, this, NULL) or obj.type!=PDF_OBJ_INDIRECT){
+            debug("object %d : failed to parse object", major);
+            goto fail;
         }
         if (obj.indirect.major!=major || obj.indirect.minor!=table[major].minor){
-            message(WARN, "Major or minor number in object are mismatched");
+            debug("object %d : mismatched obj_no %d or gen_no %d", obj.indirect.major, obj.indirect.minor);
         }
         table[major].obj = obj.indirect.obj;
         obj.type = PDF_OBJ_UNKNOWN;// this is to prevent obj.indirect.obj from being deleted
     }
     // read object if compressed nonfree object
-    else if (table[major].type==2) {
+    else if (table[major].type==COMPRESSED_OBJ) {
         // this object is inside a object stream.
         int obj_stm_no = table[major].obj_stm;
         this->readObject(f, obj_stm_no);
-        if (table[obj_stm_no].obj->type != PDF_OBJ_STREAM) {
-            message(WARN, "source obj stream of obj %d is invalid", major);
-            table[major].obj = new PdfObject();
-            table[major].obj->type = PDF_OBJ_NULL;
-            return false;
+        if (not isStream(table[obj_stm_no].obj)) {
+            debug("object %d : invalid source obj stream %d", major, obj_stm_no);
+            goto fail;
         }
         StreamObj *obj_stm = table[obj_stm_no].obj->stream;
         obj_stm->decompress();
@@ -807,7 +799,7 @@ ObjectTable:: readObject(MYFILE *f, int major)
             myfseek(file, offset, SEEK_SET);
             PdfObject *new_obj = new PdfObject();
             if (not new_obj->read(file, this, NULL)){
-                message(WARN,"PdfObject::read() failed : compressed obj %d", obj_no);
+                debug("compressed obj %d : failed to read", obj_no);
                 new_obj->type = PDF_OBJ_NULL;
             }
             table[obj_no].obj = new_obj;
@@ -817,9 +809,13 @@ ObjectTable:: readObject(MYFILE *f, int major)
         // the object stream is no longer required, as we have loaded all objects inside it
         delete table[obj_stm_no].obj;
         table[obj_stm_no].obj = NULL;
-        table[obj_stm_no].type = 0;
+        table[obj_stm_no].type = FREE_OBJ;
     }
     return true;
+fail:
+    table[major].obj = new PdfObject();
+    table[major].obj->type = PDF_OBJ_NULL;
+    return false;
 }
 
 // read all objects after loading xref table
@@ -829,23 +825,17 @@ void ObjectTable:: readObjects(MYFILE *f)
     for (size_t i=1; i<table.size(); ++i) {
         //message(LOG, "reading obj %d, type %d", i, xref->table[i].type);
         switch (table[i].type) {
-            case 0:     // free obj
+            case FREE_OBJ:
                 break;
-            case 1:     //nonfree obj
-                /* some bad xref table may have offset==0, or offset > file size.
-                This wont create problem until the obj is referenced */
-                if (table[i].offset==0){
-                    debug("offset of nonfree obj no %d is 0", i);
-                    table[i].type = 0;
-                    break;
-                }
+            case NONFREE_OBJ:
                 readObject(f, i);
                 break;
-            case 2:      // compressed obj
-                readObject(f, i);
-                table[i].type = 1;
+            case COMPRESSED_OBJ:
+                readObject(f, i);// here obj has been decompressed and read
+                table[i].type = NONFREE_OBJ;
+                break;
             default:
-                break;
+                debug("obj_table item %d : invalid obj type", i);
         }
     }
 }
@@ -913,7 +903,7 @@ bool ObjectTable:: read (MYFILE *f, size_t xref_pos)
             elm = &(this->table[object_id]);
             if (elm->type==0){ // skip if already set by next xreftable
                 elm->major = object_id;
-                elm->type = obj_type=='f'? 0 : 1;
+                elm->type = obj_type=='f'? FREE_OBJ : NONFREE_OBJ;
                 elm->offset = field1;
                 elm->minor = field2;
             }
@@ -935,8 +925,11 @@ bool ObjectTable:: read (MYFILE *f, size_t xref_pos)
     if (object_count!=0){
         return false;
     }
-    if (table[0].type!=0){//in some bad xref tables
+    if (table[0].type!=FREE_OBJ){//in some bad xref tables
         debug("obj no 0 is not free");
+        table[0].type = FREE_OBJ;// obj 0 is always free
+        table[0].minor = 65535; // and it has maximum gen id
+        table[0].offset = 0;
     }
     return true;
 }
@@ -974,7 +967,7 @@ bool ObjectTable:: read (PdfObject *stream, PdfObject *p_trailer)
         item++;
         int count = (*item)->integer;
         for (int major=first; major<first+count; major++) {
-            if (this->table[major].type!=0){//skip when already set by next xref table
+            if (this->table[major].type!=FREE_OBJ){//skip when already set by next xref table
                 i+=row_len;
                 continue;
             }
@@ -987,15 +980,15 @@ bool ObjectTable:: read (PdfObject *stream, PdfObject *p_trailer)
             elm->major = major;
             elm->type = field1;
             switch (field1) {
-            case 0:// free objects
+            case FREE_OBJ:
                 elm->next_free = field2;
                 elm->minor = field3;
                 break;
-            case 1:// non-free objects
+            case NONFREE_OBJ:
                 elm->offset = field2;
                 elm->minor = field3;
                 break;
-            case 2:// compressed objects
+            case COMPRESSED_OBJ:
                 elm->obj_stm = field2;// minor=0
                 elm->index = field3;
                 break;
@@ -1007,6 +1000,12 @@ bool ObjectTable:: read (PdfObject *stream, PdfObject *p_trailer)
     }
     //fflush(fd);
     //fclose(fd);
+    if (table[0].type!=FREE_OBJ){//in some bad xref tables
+        debug("obj no 0 is not free");
+        table[0].type = FREE_OBJ;
+        table[0].minor = 65535;
+        table[0].offset = 0;
+    }
     return true;
 }
 
@@ -1017,7 +1016,7 @@ int ObjectTable:: addObject (PdfObject *obj)
     table.resize(major+1, item);
 
     table[major].major = major;
-    table[major].type = 1;
+    table[major].type = NONFREE_OBJ;
     table[major].obj = obj;
     return major;
 }
@@ -1034,9 +1033,9 @@ void ObjectTable:: writeObjects (FILE *f)
 {
     for (size_t i=1; i<table.size(); ++i){
         switch (table[i].type){
-            case 0:
+            case FREE_OBJ:
                 continue;
-            case 1:
+            case NONFREE_OBJ:
                 table[i].offset = ftell(f);
                 if (fprintf(f,"%d %d obj\n", table[i].major, table[i].minor)<0){
                     message(FATAL,"writeObjects() : I/O error");
@@ -1056,11 +1055,9 @@ void ObjectTable:: writeObjects (FILE *f)
 
 void ObjectTable:: writeXref (FILE *f)
 {
-    table[0].type = 0;// obj 0 is always free
-    table[0].minor = 65535; // and it has maximum gen id
     fprintf(f, "xref\n%d %d\n", 0, table.size());
     for (size_t i=0; i<table.size(); ++i){
-        char type = (table[i].type) ? 'n' : 'f';
+        char type = (table[i].type!=FREE_OBJ) ? 'n' : 'f';
         if (fprintf(f,"%010d %05d %c \n", table[i].offset, table[i].minor, type)<0){
             message(FATAL, "writeXref() : I/O error");
         }

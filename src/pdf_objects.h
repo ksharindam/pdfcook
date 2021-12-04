@@ -75,8 +75,8 @@ public:
     void        deleteItem (std::string key);
     void        deleteItems();
     void        setDict (std::map<std::string, PdfObject*> &map);
-    void        merge (DictObj *src_dict);
-    void        filter (DictFilter &filter_set);
+    void        merge (DictObj *src_dict);// hard copy new items, overwrite old items
+    void        filter (DictFilter &filter_set);// remove all objects which are not in filter_set
     int         write (FILE *f);
     MapIter     begin();
     MapIter     end();
@@ -153,12 +153,18 @@ enum {
     XREF_STREAM
 };
 
+enum {
+    FREE_OBJ,
+    NONFREE_OBJ,
+    COMPRESSED_OBJ,
+};
+
 int getXrefType(MYFILE *f);
 
-
+// always obj==NULL for free obj, and never NULL for nonfree obj
 typedef struct {
     PdfObject *obj;
-    int8_t type;    // 0=free(f), 1=nonfree(n), 2=compressed
+    int8_t type;  // free(f), nonfree(n), compressed
     int major;   // object no.
     int minor; // gen id for type 1, (always 0 for type 2)
     union {
@@ -169,6 +175,9 @@ typedef struct {
     int index;// index no. within the obj stream (for type 2)
     bool used;
 } ObjectTableItem;
+
+
+/* If there is any error in object table, it should be fixed while reading the table. */
 
 class ObjectTable
 {

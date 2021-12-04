@@ -96,3 +96,14 @@ public:
     bool newBlankPage(int page_num);
     void applyTransformations();
 };
+
+/* -------- Handling Errors -----------
+1. free obj is referenced by an indirect obj
+sol. - before saving those indirect ref objs are changed to null obj.
+
+2. object offset is 0 for nonfree obj in Object table entry
+sol. - the obj is set a null obj
+
+3. obj no 0 is nonfree obj in object table
+sol. - obj 0 is set as free obj
+*/

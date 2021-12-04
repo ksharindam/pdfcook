@@ -23,7 +23,8 @@
 #include <cstdio>
 #include <getopt.h>
 
-// when no commands are provided, no pdf objects are removed, dict filters not applied
+/* when no commands are provided, no used pdf objects are removed, dict filters not applied.
+  As new single Xref table created, so /Prev entry is removed from trailer dict. */
 bool repair_mode = false;
 
 
