@@ -740,7 +740,7 @@ PdfDocument:: newBlankPage(int page_num)
     // create an empty stream object and add to obj_table, then use it as content stream
     content = new PdfObject();
     content->setType(PDF_OBJ_STREAM);
-    content->stream->stream = (char*) malloc(1*sizeof(char));
+    //content->stream->stream = (char*) malloc(1*sizeof(char));
     int major = obj_table.addObject(content);
 
     content = page->dict->newItem("Contents");
@@ -881,10 +881,8 @@ static void pdf_page_to_xobj (PdfPage *page)
 
     new_page_xobject = new_page->dict->get("Resources")->dict->get("XObject");
 
-    cont = pg->dict->get("Contents");
-    while (isRef(cont)) {
-        cont = doc->obj_table.getObject(cont->indirect.major,cont->indirect.minor);
-    }
+    cont = derefObject(pg->dict->get("Contents"), doc->obj_table);
+
     if (isStream(cont)){
         major = stream_to_xobj(cont, pg, page->bbox, doc->obj_table);
         asprintf(&xobjname, "xo%d", revision++);
@@ -909,8 +907,7 @@ static void pdf_page_to_xobj (PdfPage *page)
 
         for (auto it = cont->array->begin(); it!=cont->array->end(); it++)
         {
-            PdfObject *obj = (*it);
-            tmp_stream = doc->obj_table.getObject(obj->indirect.major, obj->indirect.minor);//decompressed stream
+            tmp_stream = derefObject((*it), doc->obj_table);//decompressed stream
             if (not tmp_stream->stream->decompress() ){
                 message(FATAL, "Can not decompress content stream");
             }

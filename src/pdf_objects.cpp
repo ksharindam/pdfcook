@@ -157,16 +157,17 @@ StreamObj:: StreamObj() {
 
 int StreamObj:: write (FILE *f)
 {
-    PdfObject *item = new PdfObject();
-    item->type = PDF_OBJ_INT;
-    item->integer = this->len;
-    this->dict.add("Length", item);
+    if (!dict.contains("Length")){
+        PdfObject *item = this->dict.newItem("Length");
+        item->type = PDF_OBJ_INT;
+    }
+    this->dict["Length"]->integer = this->len;
     this->dict.write(f);
     fprintf(f,"\nstream\n");
 
-    assert (this->stream!=NULL);
     if (this->len){
-        if (fwrite(this->stream, sizeof(char), this->len, f) != this->len){
+        assert (this->stream!=NULL);// TODO : remove it later
+        if (fwrite(this->stream, 1, this->len, f) != this->len){
             message(FATAL, "StreamObj : fwrite() error");
         }
     }
@@ -179,7 +180,7 @@ bool StreamObj:: decompress()
     if (decompressed)
         return true;
     PdfObject *p_obj = this->dict["Filter"];
-    if (p_obj == NULL) {
+    if (!p_obj or len==0) {
         decompressed = true;
         return true;
     }
@@ -214,6 +215,8 @@ bool StreamObj:: decompress()
 bool StreamObj:: compress (const char *filter)
 {
     char *ch;
+    if (len==0)
+        return true;
 
     if (apply_compress_filter(filter, &(this->stream), &(this->len), this->dict) != 0){
         return false;
@@ -488,12 +491,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                     message(FATAL,"fread() error");
                 }
             }
-            else {// for stream length is 0
-                this->stream->stream = (char *)malloc(1);
-                if (this->stream->stream==NULL){
-                    message(FATAL,"malloc() error");
-                }
-            }
+
             if (not last_tok->get(f)
                 || last_tok->type!=TOK_ID
                 || strcmp(last_tok->id,"endstream")!=0){
@@ -652,19 +650,13 @@ PdfObject:: copyFrom (PdfObject *src_obj){
                 new_obj->copyFrom(it.second);
                 this->stream->dict.add(it.first, new_obj);
             }
-            assert (src_obj->stream->stream!=NULL);
             if (src_obj->stream->len){
-                this->stream->stream = (char *) malloc(sizeof(char) * (src_obj->stream->len));
+                assert (src_obj->stream->stream!=NULL);//TODO : remove it later
+                this->stream->stream = (char*) malloc(src_obj->stream->len);
                 if (this->stream->stream==NULL){
                     return false;
                 }
                 memcpy(this->stream->stream, src_obj->stream->stream, src_obj->stream->len);
-            }
-            else {
-                this->stream->stream = (char *) malloc(sizeof(char) * 1);
-                if (this->stream->stream==NULL){
-                    return false;
-                }
             }
             return true;
         case PDF_OBJ_INDIRECT:

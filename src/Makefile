@@ -27,6 +27,9 @@ $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(@D)
 	${CXX} ${CXXFLAGS} ${INCLUDES} -c $< -o $@
 
+# requires full groff package installed
+manual:
+	groff -m man -T pdf ../pdfcook.1 > ../manual.pdf
 
 install: pdfcook
 	install pdfcook /usr/local/bin
