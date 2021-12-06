@@ -905,7 +905,8 @@ bool ObjectTable:: read (MYFILE *f, size_t xref_pos)
     if (object_count!=0){
         return false;
     }
-    if (table[0].type!=FREE_OBJ){//in some bad xref tables
+    // in some pdf table size is found to be 0
+    if (table.size()>0 and table[0].type!=FREE_OBJ){// obj 0 is nonfree in bad xref tables
         debug("obj no 0 is not free");
         table[0].type = FREE_OBJ;// obj 0 is always free
         table[0].minor = 65535; // and it has maximum gen id
