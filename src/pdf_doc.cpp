@@ -153,7 +153,7 @@ bool PdfDocument:: getPdfTrailer (MYFILE *f, char *line, long offset)
         while (!starts(line,"trailer"));
         // some pdfs may have space after trailer keyword instead of newline
         // set seek pos just after trailer keyword
-        myfseek(f, fpos+8, SEEK_SET);
+        myfseek(f, fpos+7, SEEK_SET);
     }
     // read trailer dictionary
     PdfObject content;
