@@ -863,7 +863,7 @@ bool ObjectTable:: read (MYFILE *f, size_t xref_pos)
         return false;
     }
     //FILE *fd = fopen("xref", "wb");
-    while ((pos = myftell(f)) && myfgets(line,LLEN,f)!=NULL && len>=0){
+    while ((pos = myftell(f)) && myfgets(line,LLEN,f)!=NULL){
         char *entry = line;
         while (isspace(*entry)) // fixes for leading spaces in xref table
             entry++;
