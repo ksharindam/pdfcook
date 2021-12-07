@@ -37,7 +37,7 @@ Crypt:: getEncryptionInfo(PdfObject *encrypt_dict, PdfObject *p_trailer)
     int str_type;
     PdfObject *obj = encrypt_dict->dict->get("Filter");
     if (obj && obj->type==PDF_OBJ_NAME && strcmp(obj->name, "Standard")!=0){
-        debug("error : unsupported Encrypt filter");
+        debug("error : unsupported Encrypt filter '%s'", obj->name);
         return false;
     }
     obj = encrypt_dict->dict->get("V");
@@ -94,6 +94,7 @@ Crypt:: getEncryptionInfo(PdfObject *encrypt_dict, PdfObject *p_trailer)
 bool
 Crypt:: authenticateUserPassword(std::string password)
 {
+    // Using algorithm 3.2 (PDF 1.4)
     // pad or truncate entered password to exactly 32 bytes
     std::string pwd = password + std::string(padding_str, 32);
     pwd.resize(32);
@@ -103,10 +104,13 @@ Crypt:: authenticateUserPassword(std::string password)
     MD5 hash(pwd);
     if (revision==3){
         for (int i=0; i<50; i++){
-            hash = MD5(std::string((char*)hash.digest, 16));
+            hash = MD5(std::string((char*)hash.digest, keylen));
         }
     }
     encryption_key = std::string((char*)hash.digest, keylen);
+
+    if (U.empty())
+        return true;
 
     if (revision==2){
         char tmp_U[32];
@@ -140,12 +144,22 @@ Crypt:: authenticateUserPassword(std::string password)
 bool
 Crypt:: authenticate(const char *password)
 {
-    if (U.empty())
-        return true;
-
     if (authenticateUserPassword(password))
         return true;
     // if it is not user password, then check if it is owner password
+    // step 1 to 4 of algorithm 3.3 (PDF 1.4)
+    std::string str(password);
+    str += std::string(padding_str, 32);
+    str.resize(32);
+    MD5 hash(str);
+    if (revision==3){
+        for (int i=0; i<50; i++){
+            hash = MD5(std::string((char*)hash.digest, 16));
+        }
+    }
+    encryption_key = std::string((char*)hash.digest, keylen);
+
+    // algorithm 3.7 (PDF 1.4)
     if (revision==2) {
         char tmp_O[32];
         memcpy(tmp_O, O.data(), 32);
