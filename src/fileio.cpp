@@ -117,13 +117,13 @@ int myfseek(MYFILE *stream, long offset, int origin)
         switch (origin){
             case SEEK_SET:
                 stream->ptr = stream->buf + offset;
-            break;
+                break;
             case SEEK_END:
                 stream->ptr = stream->end - offset;
-            break;
+                break;
             case SEEK_CUR:
                 stream->ptr = stream->ptr + offset;
-            break;
+                break;
         }
         if (stream->ptr >= stream->end){
             return EOF;

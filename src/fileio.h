@@ -30,6 +30,7 @@ MYFILE * myfopen(const char * filename, const char *mode);
 // close a stream
 int myfclose(MYFILE *stream);
 
+// returns 0 on success and EOF on failure
 int myfseek(MYFILE *stream, long offset, int origin);
 // read size*nmemb bytes from *stream and put data in *where
 size_t myfread(void *where, size_t size, size_t nmemb, MYFILE *stream);

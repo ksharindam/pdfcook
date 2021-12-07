@@ -147,7 +147,11 @@ PdfObject* DictObj:: operator[] (std::string key) {
     return dict[key];
 }
 
+
 // *********** ------------- Stream Object ----------------- ***********
+
+static int get_correct_stream_len(MYFILE *f, size_t begin);
+
 
 StreamObj:: StreamObj() {
     stream = NULL;
@@ -316,7 +320,7 @@ PdfObject:: readFromString (const char *str)
 bool
 PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
 {
-    uint stream_len = 0;
+    int stream_len = 0;
     size_t fpos/*, key_pos, nextkey_pos, val_pos*/;
     Token tok;
     if (last_tok==NULL){
@@ -481,22 +485,37 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                     break;
             }
             this->stream->begin = myftell(f);
+read_stream:
             this->stream->len = stream_len;
             if (stream_len){
                 this->stream->stream = (char*) malloc(stream_len);
                 if (this->stream->stream==NULL){
-                    message(FATAL,"malloc() error");
+                    message(WARN,"StreamObj : failed to allocate memory of size %d", stream_len);
+                    return false;
                 }
-                if (myfread(this->stream->stream,1,stream_len,f)!=stream_len){
-                    message(FATAL,"fread() error");
+                if (myfread(this->stream->stream,1,stream_len,f)!=(size_t)stream_len){
+                    message(WARN,"failed to read stream data of size %d at pos %d",
+                            stream_len, this->stream->begin);
+                    return false;
                 }
             }
 
             if (not last_tok->get(f)
                 || last_tok->type!=TOK_ID
-                || strcmp(last_tok->id,"endstream")!=0){
-                debug("StreamObj : endstream keyword not found");
-                return false;
+                || strcmp(last_tok->id,"endstream")!=0)// may be wrong stream Length
+            {
+                stream_len = get_correct_stream_len(f, this->stream->begin);
+                if (stream_len == -1){
+                    debug("StreamObj : endstream keyword not found");
+                    return false;
+                }
+                debug("StreamObj : fixing wrong value of stream length");
+                if (this->stream->stream){
+                    free(this->stream->stream);
+                    this->stream->stream = NULL;
+                }
+                assert(myfseek(f, this->stream->begin, SEEK_SET)==0);
+                goto read_stream;
             }
             return true;
         }
@@ -1502,3 +1521,41 @@ void bytes2pdfstr(std::string str, String &out_str, int str_type)
     memcpy(out_str.data, tmp_str.data(), tmp_str.size());
     out_str.len = tmp_str.size();
 };
+
+// returns stream length on success and -1 on failure
+static int get_correct_stream_len(MYFILE *f, size_t begin)
+{
+    if (myfseek(f, begin, SEEK_SET)!=0)
+        return -1;
+    int n, len=0;
+    char buff[1024];
+
+    while ((n=myfread(buff, 1, 1024, f))!=0)
+    {
+        for (int i=0; i<=n-9; i++) {
+            if (strncmp(buff+i, "endstream", 9)==0){
+                len+=i;
+                goto endstream;
+            }
+        }
+        if (n<1024)// we can not read further
+            return -1;
+        len += 1024-8;// we will read again last 8 bytes in next loop
+        myfseek(f, -8, SEEK_CUR);
+    }
+endstream:
+    // read two bytes before endstream keyword
+    if (myfseek(f, begin+len-2, SEEK_SET)!=0)
+        return -1;
+    myfread(buff, 1, 2, f);
+    switch (buff[1]) {
+        case '\n':
+            if (buff[0]=='\r')
+                len--;
+        case '\r':
+        case ' ':
+            len--;
+            break;
+    }
+    return len;
+}

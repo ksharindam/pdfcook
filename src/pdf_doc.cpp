@@ -881,7 +881,7 @@ static void pdf_page_to_xobj (PdfPage *page)
 
     new_page_xobject = new_page->dict->get("Resources")->dict->get("XObject");
 
-    cont = derefObject(pg->dict->get("Contents"), doc->obj_table);
+    cont = derefObject(pg->dict->get("Contents"), doc->obj_table);// it may be null
 
     if (isStream(cont)){
         major = stream_to_xobj(cont, pg, page->bbox, doc->obj_table);
@@ -932,9 +932,9 @@ static void pdf_page_to_xobj (PdfPage *page)
         free(xobjname);
     }
     else {
+        message(WARN, "Page contents is neither stream nor array obj");
 empty_cont:
         asprintf(&stream_content, " ");
-        message(WARN, "Page contents is neither stream nor array obj");
     }
     //create content stream for new page
     contents = new PdfObject();
