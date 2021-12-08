@@ -395,11 +395,8 @@ static int cmd_get_pages_args(Command *cmd, MYFILE * f, CmdToken * p_tok)
 static cmd_param * cmd_add_param(Command *cmd)
 {
     assert(cmd != NULL);
-    cmd_param * new_param = (cmd_param *)  malloc(sizeof(cmd_param));
+    cmd_param * new_param = (cmd_param *)  malloc2(sizeof(cmd_param));
 
-    if (new_param == NULL) {
-        message(FATAL, "malloc() error");
-    }
     new_param->name[0] = 0;
     new_param->next = (cmd_param *)(&cmd->params);
     new_param->prev = cmd->params.prev;

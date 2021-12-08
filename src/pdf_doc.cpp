@@ -483,8 +483,7 @@ void PdfDocument:: putPdfPages()
     if (page_list.count()<1){
         message(FATAL, "Cannot create PDF with zero pages");
     }
-    int *nodes = (int*) malloc(sizeof(int) * page_list.count());
-    assert(nodes!=NULL);
+    int *nodes = (int*) malloc2(sizeof(int) * page_list.count());
     int count=0;
     // store major nums in nodes array, which is required for creating pages tree
     for (auto page=page_list.begin(); page!=page_list.end(); page++,count++){
@@ -740,7 +739,6 @@ PdfDocument:: newBlankPage(int page_num)
     // create an empty stream object and add to obj_table, then use it as content stream
     content = new PdfObject();
     content->setType(PDF_OBJ_STREAM);
-    //content->stream->stream = (char*) malloc(1*sizeof(char));
     int major = obj_table.addObject(content);
 
     content = page->dict->newItem("Contents");
@@ -796,7 +794,7 @@ PdfDocument:: newFontObject(const char *font_name)
 
 static void pdf_stream_prepend(PdfObject *stream, const char *str, int len)
 {
-    char *new_stream = (char*) malloc(len + stream->stream->len);
+    char *new_stream = (char*) malloc2(len + stream->stream->len);
     memcpy(new_stream, str, len);
     if (stream->stream->len!=0) {
         memcpy(new_stream+len, stream->stream->stream, stream->stream->len);
@@ -812,6 +810,8 @@ static void pdf_stream_append(PdfObject *stream, const char *str, int len)
     int old_len = stream->stream->len;
     stream->stream->len += len;
     stream->stream->stream = (char*) realloc(stream->stream->stream, stream->stream->len);
+    if (stream->stream->stream==NULL)
+        message(FATAL, "realloc() failed !");
     char *ptr = stream->stream->stream + old_len;
     memcpy(ptr, str, len);
 }

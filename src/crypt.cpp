@@ -1,5 +1,6 @@
 #include "crypt.h"
 #include "debug.h"
+#include "common.h"
 #include <cstring>
 
 static uchar padding_arr[] = {
@@ -192,7 +193,7 @@ void decryptObject(PdfObject *obj, std::string key)
             if (obj->str.len>0 && obj->str.data!=NULL){
                 int str_type;
                 std::string str = pdfstr2bytes(obj->str, &str_type);
-                char *str_data = (char*)malloc(str.size());
+                char *str_data = (char*) malloc2(str.size());
                 memcpy(str_data, str.data(), str.size());
                 rc4.crypt((uchar*)str_data, str.size());
                 bytes2pdfstr(std::string(str_data, str.size()), obj->str, str_type);

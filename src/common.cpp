@@ -21,7 +21,7 @@ int asprintf(char **strp, const char *fmt, ...){
      char *p, *np;
      va_list ap;
 
-     if ((p = (char*)malloc (size)) == NULL){
+     if ((p = (char*)malloc(size)) == NULL){
         return -1;
      }
 

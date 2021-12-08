@@ -3,6 +3,7 @@
 #include <cstring>
 #include "fileio.h"
 #include "debug.h"
+#include "common.h"
 
 // 16KB buffer for MYFILE
 #define BUFSIZE 16384
@@ -18,7 +19,7 @@ int slow_mygetc(MYFILE *f)
     if (myfeof(f)){
         return EOF;
     }
-    len = fread(f->buf, sizeof(char), BUFSIZE, f->f);
+    len = fread(f->buf, 1, BUFSIZE, f->f);
     f->pos += len;
     f->ptr = f->buf;
     f->end = f->buf + (len>0 ? len:0);
@@ -48,10 +49,8 @@ MYFILE * streamopen(const char *str, size_t len)
     if (str==NULL){
         return NULL;
     }
-    f = (MYFILE *) malloc (sizeof(MYFILE));
-    if (f==NULL){
-        return NULL;
-    }
+    f = (MYFILE*) malloc2(sizeof(MYFILE));
+
     f->row = 1;
     f->column = 0;
     f->lastc = 0;
@@ -74,11 +73,9 @@ MYFILE * streamopen(const char *str, size_t len)
  this buffer is used to store and read file data. */
 MYFILE * myfopen(const char *filename, const char *mode)
 {
-    MYFILE *f = (MYFILE *) malloc(sizeof(MYFILE));
-    if (f==NULL){
-        return NULL;
-    }
-    f->buf = (char *) malloc(BUFSIZE);
+    MYFILE *f = (MYFILE*) malloc2(sizeof(MYFILE));
+
+    f->buf = (char*) malloc(BUFSIZE);
     if (f->buf==NULL){
         free(f);
         return NULL;

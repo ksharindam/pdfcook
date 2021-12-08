@@ -33,3 +33,15 @@ int arr2int(char *arr, int len);
 
 // like %f but strips trailing zeros
 std::string double2str(double num);
+
+// like malloc() but exits program when fails. use this where little memroy
+// is needed, and where we can not ignore the allocation failure
+inline void* malloc2(size_t size)
+{
+    void *ptr = malloc(size);
+    if (size!=0 && !ptr){
+        fprintf(stdout, "error : malloc() failed !\n");
+        exit(1);
+    }
+    return ptr;
+}

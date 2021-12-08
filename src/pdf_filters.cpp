@@ -7,19 +7,24 @@ int flate_decode_filter(char **stream, size_t *len, DictObj &dict)
 {
     if (*len==0) return 0;  // in some stream dict /Length in 0
     // decompress stream using zlib
-    size_t new_stream_len = *len * 3;
-    char *new_stream_content = (char *) malloc(sizeof(char) * new_stream_len);
+    size_t new_stream_len = 3 * (*len);
+    char *new_stream_content = (char *) malloc(new_stream_len);
+    if (new_stream_content==NULL)
+        return -1;
 _z_d_try:
     switch (uncompress((Bytef *) new_stream_content,(uLongf *)&new_stream_len,(Bytef *) *stream,*len)){
     case Z_OK:
         break;
     case Z_BUF_ERROR:
         new_stream_len *= 2;
-        new_stream_content = (char*) realloc(new_stream_content,sizeof(char) * new_stream_len);
-        assert(new_stream_content);
+        new_stream_content = (char*) realloc(new_stream_content, new_stream_len);
+        if (new_stream_content==NULL){
+            message(FATAL, "realloc() failed !");
+        }
         goto _z_d_try;
     case Z_MEM_ERROR:
         message(WARN, "memory error in zlib");
+        break;
     case Z_DATA_ERROR:
         message(WARN, "zlib : invalid input data");
     default:
@@ -67,10 +72,10 @@ _z_d_try:
 int zlib_compress_filter(char **stream, size_t *len, DictObj &dict)
 {
     char * new_stream_content;
-    long new_stream_len = 0;
-    new_stream_len = *len  * 2;
-    new_stream_content = (char *) malloc(sizeof(char) * new_stream_len);
-    assert(new_stream_len);
+    long new_stream_len = 2 * (*len);
+    new_stream_content = (char *) malloc(new_stream_len);
+    if (new_stream_content==NULL)
+        return -1;
 try_comp:
     switch (compress((Bytef *) new_stream_content,(uLongf *)&new_stream_len,(Bytef *) *stream,*len)){
     case Z_OK:
@@ -82,9 +87,11 @@ try_comp:
         return -1;
         break;
     case Z_BUF_ERROR:
-        new_stream_len*=2;
-        new_stream_content = (char *) realloc(new_stream_content,sizeof(char) * new_stream_len);
-        assert(new_stream_content);
+        new_stream_len *= 2;
+        new_stream_content = (char*) realloc(new_stream_content, new_stream_len);
+        if (new_stream_content==NULL){
+            message(FATAL, "realloc() failed !");
+        }
         goto try_comp;
     }
     free(*stream);
@@ -203,17 +210,12 @@ static void lzw_put_prefix(int word, struct lzw_dict dict[DICT_LEN], char ** out
     }
     if (dict[word].len == 1){
         if (*len == *index){
-            *len *=2;
-            tmp = (char *)realloc(*out,*len);
-            if (tmp){
-                *out = tmp;
+            *len *= 2;
+            tmp = (char*) realloc(*out, *len);
+            if (tmp==NULL){
+                message(FATAL, "realloc() failed !");
             }
-            else{
-                /*there can fail realloc, fixme*/
-                *len /=2;
-                assert(0);
-                return;
-            }
+            *out = tmp;
         }
 
         (*out)[*index] = dict[word].symbol;
@@ -231,13 +233,13 @@ int lzw_decompress_filter(char **stream, size_t *len, DictObj &dict)
     size_t index, offset, w_size, d_index = LZW_END_STREAM + 1;
     int word;
     int prev_word = LZW_CL_DICT;
-    char * out_buf;
-    int out_len = 3 * (*len);
     int out_index = 0;
     int early = 1;
+    int out_len = 3 * (*len);
 
-    out_buf = (char *) malloc(sizeof(char) * out_len);
-    assert(out_buf!=NULL);
+    char *out_buf = (char *) malloc(out_len);
+    if (out_buf==NULL)
+        return -1;
 
     PdfObject *early_val = dict["EarlyChange"];
     if (early_val!=NULL && early_val->type == PDF_OBJ_INT){

@@ -491,11 +491,13 @@ read_stream:
                 this->stream->stream = (char*) malloc(stream_len);
                 if (this->stream->stream==NULL){
                     message(WARN,"StreamObj : failed to allocate memory of size %d", stream_len);
+                    this->stream->len = 0;
                     return false;
                 }
                 if (myfread(this->stream->stream,1,stream_len,f)!=(size_t)stream_len){
                     message(WARN,"failed to read stream data of size %d at pos %d",
                             stream_len, this->stream->begin);
+                    this->stream->len = 0;
                     return false;
                 }
             }
@@ -638,14 +640,12 @@ PdfObject:: copyFrom (PdfObject *src_obj){
             return true;
         case PDF_OBJ_STR:
             str.len = src_obj->str.len;
-            str.data = (char*) malloc( str.len+1);
-            assert(str.data!=NULL);
+            str.data = (char*) malloc2( str.len+1);
             memcpy(str.data, src_obj->str.data, str.len+1);
             return true;
         case PDF_OBJ_NAME:
             this->name = strdup(src_obj->name);
-            if (this->name==NULL)
-                return false;
+            assert(this->name!=NULL);
             return true;
         case PDF_OBJ_ARRAY:
             for (PdfObject *item : *src_obj->array){
@@ -670,11 +670,7 @@ PdfObject:: copyFrom (PdfObject *src_obj){
                 this->stream->dict.add(it.first, new_obj);
             }
             if (src_obj->stream->len){
-                assert (src_obj->stream->stream!=NULL);//TODO : remove it later
-                this->stream->stream = (char*) malloc(src_obj->stream->len);
-                if (this->stream->stream==NULL){
-                    return false;
-                }
+                this->stream->stream = (char*) malloc2(src_obj->stream->len);
                 memcpy(this->stream->stream, src_obj->stream->stream, src_obj->stream->len);
             }
             return true;
@@ -1079,7 +1075,7 @@ typedef struct {
 
 static int mystring_new(mystring * s){
     s->size = 10;
-    s->str = (char *) malloc(sizeof(char) * s->size);
+    s->str = (char*) malloc2(s->size);
     s->str[0] = 0;
     s->cpoz = 1;
     if (s->str==NULL){
@@ -1089,17 +1085,14 @@ static int mystring_new(mystring * s){
     return 0;
 }
 
-static int mystring_add_char(mystring * s,char c)
+static int mystring_add_char(mystring *s, char c)
 {
-    char *new_str;
     if (s->size == s->cpoz){
-        s->size = s->size * 2;
-        new_str = (char *) realloc(s->str, sizeof(char) * s->size);
-        if (new_str==NULL){
-            s->size = s->size / 2;
-            return -1;
+        s->size *= 2;
+        s->str = (char*) realloc(s->str, s->size);
+        if (s->str==NULL){
+            message(FATAL, "realloc() failed !");
         }
-        s->str = new_str;
     }
     s->str[s->cpoz-1] = c;
     s->str[s->cpoz] = 0;
@@ -1248,7 +1241,7 @@ end_wh_sp:
                 }
                 if (c=='>') {
                     mystring_add_char(&mstr, '>');
-                    mstr.str = (char*) realloc(mstr.str, mstr.cpoz);
+                    mstr.str = (char*) realloc(mstr.str, mstr.cpoz);// shrink buffer
                     this->type = TOK_STR;
                     this->str.len = mstr.cpoz-1;
                     this->str.data = mstr.str;
@@ -1302,7 +1295,7 @@ end_lit_str:
                     return false;
                 }
                 mystring_add_char(&mstr, ')');
-                mstr.str = (char*) realloc(mstr.str, mstr.cpoz);
+                mstr.str = (char*) realloc(mstr.str, mstr.cpoz);// shrink buffer
                 this->type = TOK_STR;
                 this->str.len = mstr.cpoz-1;// string sometimes contains null byte, so need to store size
                 this->str.data = mstr.str;
@@ -1516,8 +1509,12 @@ void bytes2pdfstr(std::string str, String &out_str, int str_type)
         }
         tmp_str.push_back(')');
     }
-    if (out_str.len < (int)tmp_str.size())
-        out_str.data = (char*)realloc(out_str.data, tmp_str.size());
+    if (out_str.len < (int)tmp_str.size()) {
+        out_str.data = (char*) realloc(out_str.data, tmp_str.size());
+        if (out_str.data==NULL){
+            message(FATAL, "realloc() failed !");
+        }
+    }
     memcpy(out_str.data, tmp_str.data(), tmp_str.size());
     out_str.len = tmp_str.size();
 };
