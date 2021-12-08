@@ -193,10 +193,8 @@ bool StreamObj:: decompress()
         {
         for (PdfObject *filter : *p_obj->array){
             assert(filter->type==PDF_OBJ_NAME);
-            /*while (filter->type == PDF_OBJ_INDIRECT_REF){ // FIXME if error occurs
-                // get the object from reference
-            }*/
             if (apply_decompress_filter(filter->name, &(this->stream), &(this->len), this->dict) != 0){
+                message(WARN, "failed to apply decompress filter %s", filter->name);
                 return false;
             }
         }
@@ -204,11 +202,12 @@ bool StreamObj:: decompress()
     }
     case PDF_OBJ_NAME:
         if (apply_decompress_filter(p_obj->name, &(this->stream), &(this->len), this->dict) != 0){
-            message(FATAL, "failed to decompress object");
+            message(WARN, "failed to apply decompress filter %s", p_obj->name);
+            return false;
         }
         break;
     default: // FIXME : it can be indirect object
-        message(FATAL, "could not decompress stream obj of type %d", p_obj->type);
+        message(WARN, "could not decompress stream obj of type %d", p_obj->type);
         return false;
     }
     this->dict.deleteItem("Filter");
@@ -776,7 +775,8 @@ ObjectTable:: readObject(MYFILE *f, int major)
             goto fail;
         }
         StreamObj *obj_stm = table[obj_stm_no].obj->stream;
-        obj_stm->decompress();
+        if (not obj_stm->decompress())
+            goto fail;
         int n = obj_stm->dict["N"]->integer; // number of objects in this stream
         int first = obj_stm->dict["First"]->integer;// offset of first member inside stream
         // open stream as file, parse and get all objects inside it
@@ -937,7 +937,8 @@ bool ObjectTable:: read (PdfObject *stream, PdfObject *p_trailer)
 {
     //FILE *fd;
     //fd = fopen("xref", "wb");
-    stream->stream->decompress();
+    if (not stream->stream->decompress())
+        return false;
     // table_size is the max object number + 1
     int table_size = p_trailer->dict->get("Size")->integer;
     this->expandToFit(table_size);
@@ -1241,13 +1242,17 @@ end_wh_sp:
                 }
                 if (c=='>') {
                     mystring_add_char(&mstr, '>');
-                    mstr.str = (char*) realloc(mstr.str, mstr.cpoz);// shrink buffer
+                    char *buff = (char*) realloc(mstr.str, mstr.cpoz);// shrink buffer
+                    if (buff){// even realloc to smaller size may fail
+                        mstr.str = buff;
+                    }
                     this->type = TOK_STR;
                     this->str.len = mstr.cpoz-1;
                     this->str.data = mstr.str;
                     return true;
                 }
-                else {//EOF, should free mystring data
+                else {//EOF
+                    free(mstr.str);
                     this->type = TOK_UNKNOWN;
                     return false;
                 }
@@ -1266,41 +1271,45 @@ end_wh_sp:
                 }
             break;
         case '(': // literal string, it may contain balanced parentheses
-                parenthes = 0;
-                //this->str.type=PDF_STR_CHR;
-                mystring_new(&mstr);
-                mystring_add_char(&mstr, '(');
-                while ((c=mygetc(f))!=EOF){
-                    switch(c){
-                        case '\\':
-                            mystring_add_char(&mstr,c);
-                            c=mygetc(f);
+            parenthes = 0;
+            //this->str.type=PDF_STR_CHR;
+            mystring_new(&mstr);
+            mystring_add_char(&mstr, '(');
+            while ((c=mygetc(f))!=EOF){
+                switch(c){
+                    case '\\':
+                        mystring_add_char(&mstr,c);
+                        c=mygetc(f);
 
-                            break;
-                        case '(':
-                            parenthes++;
-                            break;
-                        case ')':
-                            if (parenthes==0){
-                                goto end_lit_str;
-                            }
-                            --parenthes;
-                            break;
-                    }
-                    mystring_add_char(&mstr,c);
+                        break;
+                    case '(':
+                        parenthes++;
+                        break;
+                    case ')':
+                        if (parenthes==0){
+                            goto end_lit_str;
+                        }
+                        --parenthes;
+                        break;
                 }
+                mystring_add_char(&mstr,c);
+            }
 end_lit_str:
-                if (c==EOF){//should free mystring data here
-                    this->type = TOK_UNKNOWN;
-                    return false;
-                }
+            if (c==')') {
                 mystring_add_char(&mstr, ')');
-                mstr.str = (char*) realloc(mstr.str, mstr.cpoz);// shrink buffer
+                char *buff = (char*) realloc(mstr.str, mstr.cpoz);// shrink buffer
+                if (buff){
+                    mstr.str = buff;
+                }
                 this->type = TOK_STR;
                 this->str.len = mstr.cpoz-1;// string sometimes contains null byte, so need to store size
                 this->str.data = mstr.str;
                 return true;
-            break;
+            }
+            // EOF
+            free(mstr.str);
+            this->type = TOK_UNKNOWN;
+            return false;
         case '/':  //name object
             i=0;
             while ((c=mygetc(f))!=EOF){

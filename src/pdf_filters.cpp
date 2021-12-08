@@ -7,35 +7,40 @@ int flate_decode_filter(char **stream, size_t *len, DictObj &dict)
 {
     if (*len==0) return 0;  // in some stream dict /Length in 0
     // decompress stream using zlib
+    char *buff;
+    int predictor;
+    PdfObject *dec_params;
+
     size_t new_stream_len = 3 * (*len);
     char *new_stream_content = (char *) malloc(new_stream_len);
-    if (new_stream_content==NULL)
+    if (new_stream_content==NULL){
+        message(WARN, "zlib : malloc() failed !");
         return -1;
+    }
 _z_d_try:
-    switch (uncompress((Bytef *) new_stream_content,(uLongf *)&new_stream_len,(Bytef *) *stream,*len)){
+    switch (uncompress((Bytef*)new_stream_content, (uLongf*)&new_stream_len,
+                                                    (Bytef*)*stream, *len))
+    {
     case Z_OK:
         break;
     case Z_BUF_ERROR:
         new_stream_len *= 2;
-        new_stream_content = (char*) realloc(new_stream_content, new_stream_len);
-        if (new_stream_content==NULL){
-            message(FATAL, "realloc() failed !");
+        buff = (char*) realloc(new_stream_content, new_stream_len);
+        if (buff==NULL){
+            message(WARN, "zlib : realloc() failed !");
+            goto fail;
         }
+        new_stream_content = buff;
         goto _z_d_try;
-    case Z_MEM_ERROR:
-        message(WARN, "memory error in zlib");
-        break;
     case Z_DATA_ERROR:
         message(WARN, "zlib : invalid input data");
+    case Z_MEM_ERROR:
     default:
-        dict.write(stdout);
-        free(new_stream_content);
-        return -1;
+        goto fail;
     }
-    free(*stream);
     // decode the decompressed stream
-    int predictor = 1;
-    PdfObject *dec_params = dict["DecodeParms"];
+    predictor = 1;
+    dec_params = dict["DecodeParms"];
     if (dec_params)
         predictor = dec_params->dict->get("Predictor")->integer;
     // 10-15 = png filter
@@ -63,41 +68,61 @@ _z_d_try:
     }
     else if (predictor>1) {
         message(WARN, "Unsupported FlateDecode predictor of type %d", predictor);
+        goto fail;
+    }
+    free(*stream);
+    // shrink to content size
+    buff = (char*) realloc(new_stream_content, new_stream_len);
+    if (buff){
+        new_stream_content = buff;
     }
     *stream = new_stream_content;
     *len = new_stream_len;
     return 0;
+fail:
+    free(new_stream_content);
+    return -1;
 }
 
 int zlib_compress_filter(char **stream, size_t *len, DictObj &dict)
 {
-    char * new_stream_content;
+    char *buff;
     long new_stream_len = 2 * (*len);
-    new_stream_content = (char *) malloc(new_stream_len);
+    char *new_stream_content = (char *) malloc(new_stream_len);
     if (new_stream_content==NULL)
         return -1;
 try_comp:
-    switch (compress((Bytef *) new_stream_content,(uLongf *)&new_stream_len,(Bytef *) *stream,*len)){
+    switch (compress((Bytef*)new_stream_content, (uLongf*)&new_stream_len,
+                                                (Bytef*)*stream, *len))
+    {
     case Z_OK:
-        break;
-    case Z_MEM_ERROR:
-    case Z_DATA_ERROR:
-    default:
-        assert(0);
-        return -1;
         break;
     case Z_BUF_ERROR:
         new_stream_len *= 2;
-        new_stream_content = (char*) realloc(new_stream_content, new_stream_len);
-        if (new_stream_content==NULL){
-            message(FATAL, "realloc() failed !");
+        buff = (char*) realloc(new_stream_content, new_stream_len);
+        if (buff==NULL){
+            message(WARN, "zlib : realloc() failed !");
+            goto fail;
         }
+        new_stream_content = buff;
         goto try_comp;
+    case Z_MEM_ERROR:
+    case Z_DATA_ERROR:
+    default:
+        goto fail;
     }
     free(*stream);
+    // shrink to content size
+    buff = (char*) realloc(new_stream_content, new_stream_len);
+    if (buff){
+        new_stream_content = buff;
+    }
     *stream = new_stream_content;
     *len = new_stream_len;
     return 0;
+fail:
+    free(new_stream_content);
+    return -1;
 }
 
 
@@ -229,6 +254,8 @@ static void lzw_put_prefix(int word, struct lzw_dict dict[DICT_LEN], char ** out
 
 int lzw_decompress_filter(char **stream, size_t *len, DictObj &dict)
 {
+    if (len==0)
+        return 0;
     struct lzw_dict lzw_dict[DICT_LEN +1];
     size_t index, offset, w_size, d_index = LZW_END_STREAM + 1;
     int word;
@@ -238,8 +265,10 @@ int lzw_decompress_filter(char **stream, size_t *len, DictObj &dict)
     int out_len = 3 * (*len);
 
     char *out_buf = (char *) malloc(out_len);
-    if (out_buf==NULL)
+    if (out_buf==NULL){
+        message(WARN, "lzw : malloc() failed !");
         return -1;
+    }
 
     PdfObject *early_val = dict["EarlyChange"];
     if (early_val!=NULL && early_val->type == PDF_OBJ_INT){
@@ -249,17 +278,18 @@ int lzw_decompress_filter(char **stream, size_t *len, DictObj &dict)
     index = 0;
     w_size = 9;
 
-    do{
+    do {
         offset = 0;
         word = lzw_raw_get_ch((unsigned char *)*stream,*len,&index,&offset,w_size);
-    }while(word != EOF && word != LZW_CL_DICT);
+    } while(word != EOF && word != LZW_CL_DICT);
 
     if (word == EOF){
-        printf("EOF\n");
+        message(WARN, "lzw : reached EOF !");
+        free(out_buf);
         return -1;
     }
 
-    do{
+    do {
         if (word==LZW_CL_DICT){
             lzw_clear_dict(lzw_dict,256);
             d_index = LZW_END_STREAM + 1;
@@ -273,14 +303,12 @@ int lzw_decompress_filter(char **stream, size_t *len, DictObj &dict)
         }
         prev_word = word;
         word = lzw_raw_get_ch((unsigned char *)*stream,*len,&index,&offset,w_size);
-    }while(word != EOF && word != LZW_END_STREAM);
-
+    } while(word != EOF && word != LZW_END_STREAM);
 
     *len = out_index;
     free(*stream);
     *stream = out_buf;
     return 0;
-
 }
 #endif
 
@@ -299,7 +327,7 @@ stream_filters  _decompress_filters[]= {
 /*filter mapping for compressions*/
 stream_filters  _compress_filters[] = {
     {"FlateDecode",     zlib_compress_filter},
-    {"LZWDecode",       lzw_compress_filter},
+    {"LZWDecode",       NULL},
     {"ASCII85Decode",   NULL},
     {"DCTDecode",       NULL},
     {"RunLengthDecode", NULL},
