@@ -1068,37 +1068,31 @@ ObjectTableItem& ObjectTable:: operator[] (int index) {
 
 // *********** ------------- Token Parser ----------------- ***********
 
+// unlike c_str() this is not null terminated string
 typedef struct {
-    char *str;
-    size_t size;// allocated size
-    size_t cpoz;//current position, str length+1
+    char *buff;
+    size_t len;// content size
+    size_t buff_size;
 } mystring;
 
-static int mystring_new(mystring * s){
-    s->size = 10;
-    s->str = (char*) malloc2(s->size);
-    s->str[0] = 0;
-    s->cpoz = 1;
-    if (s->str==NULL){
-        s->size = 0;
-        return -1;
-    }
-    return 0;
+static mystring mystring_new()
+{
+    mystring str = {NULL, 0, 16};
+    str.buff = (char*) malloc2(str.buff_size);
+    return str;
 }
 
-static int mystring_add_char(mystring *s, char c)
+static void mystring_add_char(mystring *str, char c)
 {
-    if (s->size == s->cpoz){
-        s->size *= 2;
-        s->str = (char*) realloc(s->str, s->size);
-        if (s->str==NULL){
+    if (str->buff_size == str->len){
+        str->buff_size *= 2;
+        str->buff = (char*) realloc(str->buff, str->buff_size);
+        if (str->buff==NULL){
             message(FATAL, "realloc() failed !");
         }
     }
-    s->str[s->cpoz-1] = c;
-    s->str[s->cpoz] = 0;
-    s->cpoz++;
-    return 0;
+    str->buff[str->len] = c;
+    str->len++;
 }
 
 
@@ -1109,10 +1103,7 @@ Token:: Token() {
 bool
 Token:: get (MYFILE * f)
 {
-    int c, minus=0, parenthes;
-    mystring mstr = {NULL,0,0};
-    size_t i;
-    int number;
+    int c, minus=0, parenthes, number;
     double real_number, frac;
     // skip whitespace characters
     int newline = 0;
@@ -1227,60 +1218,56 @@ end_wh_sp:
             this->type = TOK_EARRAY;
             return true;
         case '<': /*hexadecimal string or dictionary*/
+        {
             if ((c=mygetc(f))=='<'){
                 this->type = TOK_BDICT;
                 return true;
             }
-            else {
-                //this->str.type=PDF_STR_HEX;
-                mystring_new(&mstr);
-                mystring_add_char(&mstr, '<');
-                /*hexadecimal string*/
-                while (c!=EOF && c!='>'){
-                    mystring_add_char(&mstr,c);
-                    c = mygetc(f);
-                }
-                if (c=='>') {
-                    mystring_add_char(&mstr, '>');
-                    char *buff = (char*) realloc(mstr.str, mstr.cpoz);// shrink buffer
-                    if (buff){// even realloc to smaller size may fail
-                        mstr.str = buff;
-                    }
-                    this->type = TOK_STR;
-                    this->str.len = mstr.cpoz-1;
-                    this->str.data = mstr.str;
-                    return true;
-                }
-                else {//EOF
-                    free(mstr.str);
-                    this->type = TOK_UNKNOWN;
-                    return false;
-                }
+            //this->str.type=PDF_STR_HEX;
+            mystring mstr = mystring_new();
+            mystring_add_char(&mstr, '<');
+            /*hexadecimal string*/
+            while (c!=EOF && c!='>'){
+                mystring_add_char(&mstr,c);
+                c = mygetc(f);
             }
-            break;
-
+            if (c=='>') {
+                mystring_add_char(&mstr, '>');
+                char *buff = (char*) realloc(mstr.buff, mstr.len);// shrink buffer
+                if (buff){// even realloc to smaller size may fail
+                    mstr.buff = buff;
+                }
+                this->type = TOK_STR;
+                this->str.len = mstr.len;
+                this->str.data = mstr.buff;
+                return true;
+            }
+            //EOF
+            free(mstr.buff);
+            this->type = TOK_UNKNOWN;
+            return false;
+        }
         case '>': //end dictionary
-                if (mygetc(f)=='>'){
-                    this->type = TOK_EDICT;
-                    return true;
-                }
-                else {
-                    this->type = TOK_UNKNOWN;
-                    myungetc(f);
-                    return false;
-                }
-            break;
+        {
+            if (mygetc(f)=='>'){
+                this->type = TOK_EDICT;
+                return true;
+            }
+            this->type = TOK_UNKNOWN;
+            myungetc(f);
+            return false;
+        }
         case '(': // literal string, it may contain balanced parentheses
+        {
             parenthes = 0;
             //this->str.type=PDF_STR_CHR;
-            mystring_new(&mstr);
+            mystring mstr = mystring_new();
             mystring_add_char(&mstr, '(');
             while ((c=mygetc(f))!=EOF){
                 switch(c){
                     case '\\':
                         mystring_add_char(&mstr,c);
-                        c=mygetc(f);
-
+                        c = mygetc(f);
                         break;
                     case '(':
                         parenthes++;
@@ -1297,21 +1284,23 @@ end_wh_sp:
 end_lit_str:
             if (c==')') {
                 mystring_add_char(&mstr, ')');
-                char *buff = (char*) realloc(mstr.str, mstr.cpoz);// shrink buffer
+                char *buff = (char*) realloc(mstr.buff, mstr.len);// shrink buffer
                 if (buff){
-                    mstr.str = buff;
+                    mstr.buff = buff;
                 }
                 this->type = TOK_STR;
-                this->str.len = mstr.cpoz-1;// string sometimes contains null byte, so need to store size
-                this->str.data = mstr.str;
+                this->str.len = mstr.len;
+                this->str.data = mstr.buff;
                 return true;
             }
             // EOF
-            free(mstr.str);
+            free(mstr.buff);
             this->type = TOK_UNKNOWN;
             return false;
+        }
         case '/':  //name object
-            i=0;
+        {
+            int i=0;
             while ((c=mygetc(f))!=EOF){
                 switch(c){
                     case CHAR_FF:
@@ -1344,6 +1333,7 @@ end_name:
             this->name[i] = 0;
             this->type = TOK_NAME;
             return true;
+        }
         case '%': //comment, skip characters to end of line, then find next token
             while ((c=mygetc(f))!=EOF && c!=CHAR_LF && c!=CHAR_CR)
                 ;
@@ -1357,7 +1347,7 @@ end_name:
             }
             break;
         default:
-            i=0;
+            int i=0;
             do {
             switch (c){
                 case CHAR_FF:
