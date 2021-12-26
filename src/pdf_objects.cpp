@@ -339,7 +339,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             last_tok->get(f);
             if (last_tok->type!=TOK_INT || last_tok->sign){// not indirect object
                 last_tok->freeData();
-                if ( myfseek(f, fpos, SEEK_SET)==EOF ){
+                if ( myfseek(f, fpos, SEEK_SET)==-1 ){
                     message(FATAL,"myfseek()  error in file %s at line %d", __FILE__, __LINE__);
                 }
                 return true;
@@ -348,7 +348,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
             last_tok->get(f);
             if (last_tok->type!=TOK_ID){
                 last_tok->freeData();
-                if (myfseek(f,fpos,SEEK_SET)==EOF){
+                if (myfseek(f,fpos,SEEK_SET)==-1){
                     message(FATAL,"myfseek()  error in file %s at line  %d",__FILE__, __LINE__);
                 }
                 return true;
@@ -373,7 +373,7 @@ PdfObject:: read (MYFILE *f, ObjectTable *xref, Token *last_tok)
                 return true;
             }
             // two int numbers and a TOK_ID next to it other than 'R' and 'obj'
-            if (myfseek(f,fpos,SEEK_SET)==EOF){
+            if (myfseek(f,fpos,SEEK_SET)==-1){
                 message(FATAL,"myfseek()  error in file %s at line %d",__FILE__,__LINE__);
             }
             return true;

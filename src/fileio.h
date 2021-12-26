@@ -8,8 +8,9 @@ typedef struct {
     char *buf;
     char *ptr;
     char *end;
-    long pos;// how much we have read the file/string until now
-    int eof;
+    long pos;// offset of *end from the beginning file/string
+    int eof;// eof==EOF if no data left to read from file to internal buffer
+    // used in command parsing
     int column;
     int row;
     int lastc;
@@ -18,7 +19,7 @@ typedef struct {
 // returns current seek position
 #define myftell(f) ((f->pos)-((f->end) - (f->ptr)))
 // returns true if seek pos is at the end
-#define myfeof(f) (f->eof==EOF && (f->ptr==f->end))
+#define myfeof(f) (f->eof==EOF && (f->ptr>=f->end))
 // returns the current char and seek 1 byte forward
 #define mygetc(f) ((f->ptr < f->end) ? *(f->ptr)++ : slow_mygetc(f))
 // seek 1 byte backward
@@ -30,11 +31,14 @@ MYFILE * myfopen(const char * filename, const char *mode);
 // close a stream
 int myfclose(MYFILE *stream);
 
-// returns 0 on success and EOF on failure
+// returns 0 on success and -1 on failure
 int myfseek(MYFILE *stream, long offset, int origin);
+
 // read size*nmemb bytes from *stream and put data in *where
 size_t myfread(void *where, size_t size, size_t nmemb, MYFILE *stream);
-// read string upto next newline
+
+// read string upto next newline or atmost size-1 bytes.
+// Unlike fgets() it does not put newline character
 char* myfgets(char *line, int size, MYFILE *stream);
 // it is getc() for MYFILE when re-reading the file is needed to fill buffer
 int slow_mygetc(MYFILE * f);
