@@ -1052,7 +1052,7 @@ void ObjectTable:: writeObjects (FILE *f)
 
 void ObjectTable:: writeXref (FILE *f)
 {
-    fprintf(f, "xref\n%d %d\n", 0, table.size());
+    fprintf(f, "xref\n%d %d\n", 0, (int)table.size());
     for (size_t i=0; i<table.size(); ++i){
         char type = (table[i].type!=FREE_OBJ) ? 'n' : 'f';
         if (fprintf(f,"%010d %05d %c \n", table[i].offset, table[i].minor, type)<0){

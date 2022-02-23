@@ -29,7 +29,7 @@ MYFILE * streamopen(const char *str, size_t len)
     f->f = NULL;
 
     // allocate buffer and read whole string
-    f->buf = (char *) malloc(len);
+    f->buf = (unsigned char *) malloc(len);
     if (f->buf==NULL){
         free(f);
         return NULL;
@@ -58,7 +58,7 @@ MYFILE * myfopen(const char *filename, const char *mode)
         return NULL;
     }
 
-    f->buf = (char*) malloc(BUFSIZE);
+    f->buf = (unsigned char*) malloc(BUFSIZE);
     if (f->buf==NULL){
         fclose(f->f);
         free(f);

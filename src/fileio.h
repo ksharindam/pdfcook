@@ -5,9 +5,9 @@
 
 typedef struct {
     FILE *f;
-    char *buf;
-    char *ptr;
-    char *end;
+    unsigned char *buf;// must be unsigned, otherwise char 255 becomes -1 (i.e EOF)
+    unsigned char *ptr;
+    unsigned char *end;
     long pos;// offset of *end from the beginning file/string
     int eof;// eof==EOF if no data left to read from file to internal buffer
     // used in command parsing
