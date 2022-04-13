@@ -526,7 +526,7 @@ bool PdfDocument:: save (const char *filename)
     fprintf(f, "%%PDF-%d.%d\n", v_major, v_minor);
     // second line of file should contain at least 4 non-ASCII characters in
     char binary[] = {(char)0xDE,(char)0xAD,' ',(char)0xBE,(char)0xEF,'\n',0};
-    fprintf(f, binary);
+    fprintf(f, "%s", binary);
     // build Pages tree, and insert root Pages node in Catalog
     applyTransformations();// apply transformation matrix of all pages
     putPdfPages();
