@@ -4,7 +4,7 @@
 // read a big endian integer provided as char array
 int arr2int(char *arr, int len)
 {
-    char tmp[4] = {};
+    unsigned char tmp[4] = {};
     for (int i=0; i<len; i++) {
         tmp[4-len+i] = arr[i];
     }
