@@ -76,6 +76,10 @@ _z_d_try:
     if (buff){
         new_stream_content = buff;
     }
+    // new_stream_len my be zero after decompress, in that case realloc() frees memory
+    if (!new_stream_len){
+        new_stream_content = NULL;
+    }
     *stream = new_stream_content;
     *len = new_stream_len;
     return 0;

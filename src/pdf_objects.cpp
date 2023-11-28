@@ -278,7 +278,9 @@ PdfObject:: PdfObject() {
 void
 PdfObject:: setType(ObjectType obj_type)
 {
-    type = obj_type;//TODO : if prev type is not PDF_OBJ_UNKNOWN , clear()
+    if (obj_type!=PDF_OBJ_UNKNOWN)
+        this->clear();
+    type = obj_type;
     switch (type)
     {
     case PDF_OBJ_DICT:

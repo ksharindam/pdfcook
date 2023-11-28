@@ -794,10 +794,14 @@ PdfDocument:: newFontObject(const char *font_name)
 
 static void pdf_stream_prepend(PdfObject *stream, const char *str, int len)
 {
+    if (len==0 or str==NULL)
+        return;
     char *new_stream = (char*) malloc2(len + stream->stream->len);
     memcpy(new_stream, str, len);
     if (stream->stream->len!=0) {
         memcpy(new_stream+len, stream->stream->stream, stream->stream->len);
+    }
+    if (stream->stream->stream){
         free(stream->stream->stream);
     }
     stream->stream->stream = new_stream;
@@ -807,6 +811,8 @@ static void pdf_stream_prepend(PdfObject *stream, const char *str, int len)
 // get a stream object and append a char stream to it
 static void pdf_stream_append(PdfObject *stream, const char *str, int len)
 {
+    if (len==0 or str==NULL)
+        return;
     int old_len = stream->stream->len;
     stream->stream->len += len;
     stream->stream->stream = (char*) realloc(stream->stream->stream, stream->stream->len);
