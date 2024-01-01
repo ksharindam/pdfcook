@@ -1120,7 +1120,6 @@ static bool cmd_nup (PdfDocument &doc, Param params[], PageRanges &pages)
         doc.newBlankPage(-1);
         PdfPage &new_page = doc.page_list[doc.page_list.count()-1];//last page
         new_page.paper = paper;
-        new_page.bbox = paper;
         for (int j=0; j<n; j++) {
             PdfPage &page = doc.page_list[0];
             new_page.mergePage(page);
@@ -1322,10 +1321,8 @@ static bool cmd_pinfo (PdfDocument &doc, Param params[], PageRanges &pages)
 {
     for (int page_num : pages){
         PdfPage &page = doc.page_list[page_num-1];
-        const char *bbox_type = page.bbox_is_cropbox ? "CropBox" : "TrimBox";
         printf("%d\n", page_num);
         printf("    Paper %g %g %g %g\n", page.paper.left.x, page.paper.left.y, page.paper.right.x, page.paper.right.y);
-        printf("    %s %g %g %g %g\n", bbox_type, page.bbox.left.x, page.bbox.left.y, page.bbox.right.x, page.bbox.right.y);
     }
     return true;
 }

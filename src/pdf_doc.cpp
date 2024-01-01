@@ -56,8 +56,8 @@ PdfDocument:: PdfDocument()
     trailer = new PdfObject();
     trailer->setType(PDF_OBJ_DICT);
     // set default paper size
-    paper.right = Point(595, 842);
-    bbox = paper;
+    //paper.right = Point(595, 842);
+    //cropbox = paper;
     encrypted = false;
     have_encrypt_info = false;
     decryption_supported = false;
@@ -313,9 +313,8 @@ bool PdfDocument:: decrypt(const char *password)
 bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
 {
     PdfObject *pages, *pages_type, *kids, *child_pg;
-    PdfObject *resources, *child_resources, *resources_tmp;
-    Rect tmp_bbox;
-    Rect tmp_paper;
+    PdfObject *resources, *child_resources;
+    PdfObject *mediabox, *cropbox;
 
     pages = obj_table.getObject(major, minor);
     pages_type = pages->dict->get("Type");
@@ -324,18 +323,9 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
     }
     /*Pages node*/
     if (strcmp("Pages", pages_type->name)==0){
-        tmp_paper = this->paper;
-        tmp_bbox = this->bbox;
-        // set paper size
-        this->paper.getFromObject(pages->dict->get("MediaBox"), obj_table);
-        // set bounding box
-        bbox_is_cropbox = false;
-        if (!this->bbox.getFromObject(pages->dict->get("CropBox"), obj_table)){
-            if (!this->bbox.getFromObject(pages->dict->get("TrimBox"), obj_table)){
-                this->bbox = Rect();
-            }
-        }
-        else bbox_is_cropbox = true;
+        // get paper size and cropbox
+        mediabox = pages->dict->get("MediaBox");
+        cropbox = pages->dict->get("CropBox");
         // get all childs, each child may be a Pages Node, or a Page Object
         kids = derefObject(pages->dict->get("Kids"), obj_table);
 
@@ -349,9 +339,16 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
             if ((*kid)->type!=PDF_OBJ_INDIRECT_REF){
                 message(FATAL,"Kids array item is not indirect ref object");
             }
+            child_pg = obj_table.getObject((*kid)->indirect.major, (*kid)->indirect.minor);
+            // copy MediaBox and CropBox of Pages Node to child node
+            if (mediabox and child_pg->dict->get("MediaBox")==NULL){
+                child_pg->dict->newItem("MediaBox")->copyFrom(mediabox);
+            }
+            if (cropbox and child_pg->dict->get("CropBox")==NULL){
+                child_pg->dict->newItem("CropBox")->copyFrom(cropbox);
+            }
             // add resources of Pages Node to child page Resources
             if (isDict(resources)){
-                child_pg = obj_table.getObject((*kid)->indirect.major, (*kid)->indirect.minor);
                 // child has Resources entry, merge with parent's Resources Dict
                 if ((child_resources = child_pg->dict->get("Resources"))!=NULL){
                     child_resources = derefObject(child_resources, obj_table);
@@ -366,14 +363,11 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
                     }
                 }
                 else {// child doesn't have Resources entry, copy all Resources from parent
-                    resources_tmp = child_pg->dict->newItem("Resources");
-                    resources_tmp->copyFrom(resources);
+                    child_pg->dict->newItem("Resources")->copyFrom(resources);
                 }
             }
             getPdfPages(f, (*kid)->indirect.major, (*kid)->indirect.minor);
         }
-        this->paper = tmp_paper;
-        this->bbox = tmp_bbox;
         return true;
     }
     /*Page leaf*/
@@ -388,20 +382,12 @@ bool PdfDocument:: getPdfPages(MYFILE *f, int major, int minor)
            BleedBox and ArtBpx has no effect either in printer or in viewer
         */
         if (!new_page.paper.getFromObject(pages->dict->get("MediaBox"), obj_table)) {
-            // Page does not have this entry, means it has to be inherited from Parent Pages node
-            new_page.paper = this->paper;
+            message(FATAL, "Page does not have MediaBox entry");
         }
         // in a pdfviewer, the visible page size is the CropBox
-        if (new_page.bbox.getFromObject(pages->dict->get("CropBox"), obj_table)){
-            new_page.bbox_is_cropbox = true;
-        }
-        else if (!new_page.bbox.getFromObject(pages->dict->get("TrimBox"), obj_table)){
-            if (not this->bbox.isZero()) {
-                new_page.bbox = this->bbox;
-                new_page.bbox_is_cropbox = this->bbox_is_cropbox;
-            }
-            else
-                new_page.bbox = new_page.paper;
+        Rect cropbox;
+        if (cropbox.getFromObject(pages->dict->get("CropBox"), obj_table)){
+            new_page.paper = cropbox;
         }
         if (not repair_mode)
             pages->dict->filter(page_filter);
@@ -489,13 +475,8 @@ void PdfDocument:: putPdfPages()
     for (auto page=page_list.begin(); page!=page_list.end(); page++,count++){
         nodes[count] = page->major;
         pobj = obj_table.getObject(page->major, page->minor);
-        // set paper size and bbox size in Page Dict
+        // set paper size in Page Dict
         page->paper.setToObject(pobj->dict->newItem("MediaBox"));
-
-        if (!page->bbox.isZero()) {
-            const char *bbox_name = page->bbox_is_cropbox ? "CropBox" : "TrimBox";
-            page->bbox.setToObject(pobj->dict->newItem(bbox_name));
-        }
     }
     makePagesTree(nodes, count, obj_table);
 
@@ -758,8 +739,6 @@ PdfDocument:: newBlankPage(int page_num)
         ref_page_num = page_num-1;
     // use the same cropbox and papersize as reference page
     p_page.paper = page_list[ref_page_num-1].paper;
-    p_page.bbox = page_list[ref_page_num-1].pageSize();
-    p_page.bbox_is_cropbox = page_list[ref_page_num-1].bbox_is_cropbox;
 
     if (page_num > page_list.count()) {
         page_list.append(p_page);
@@ -890,7 +869,7 @@ static void pdf_page_to_xobj (PdfPage *page)
     cont = derefObject(pg->dict->get("Contents"), doc->obj_table);// it may be null
 
     if (isStream(cont)){
-        major = stream_to_xobj(cont, pg, page->bbox, doc->obj_table);
+        major = stream_to_xobj(cont, pg, page->paper, doc->obj_table);
         asprintf(&xobjname, "xo%d", revision++);
         xobj_val = new_page_xobject->dict->newItem(xobjname);
 
@@ -921,7 +900,7 @@ static void pdf_page_to_xobj (PdfPage *page)
             pdf_stream_append(new_stream, tmp_stream->stream->stream,
                                             tmp_stream->stream->len);
         }
-        major = stream_to_xobj(new_stream, pg, page->bbox, doc->obj_table);
+        major = stream_to_xobj(new_stream, pg, page->paper, doc->obj_table);
 
         xobj = doc->obj_table.getObject(major, doc->obj_table[major].minor);
         assert( xobj->stream->compress("FlateDecode") );
@@ -963,15 +942,12 @@ PdfPage:: PdfPage()
 {
     major = 0;
     compressed = true;
-    bbox_is_cropbox = false;
     doc = NULL;
 }
 
 Rect
 PdfPage:: pageSize()
 {
-    if (bbox_is_cropbox)
-        return bbox;
     return paper;
 }
 
@@ -1119,8 +1095,7 @@ PdfPage:: transform (Matrix mat)
     pdf_page_to_xobj(this);
     // transform page content
     matrix.multiply(mat);
-    // transform bounding box & paper
-    mat.transform(bbox);
+    // transform paper
     mat.transform(paper);
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#define PROG_VERSION "0.4"
+#define PROG_VERSION "0.4.5"
 
 
 /* Do we have LZW decompression lib */

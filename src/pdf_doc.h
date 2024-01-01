@@ -15,12 +15,11 @@ typedef struct {
 
 void print_font_names();
 
+
 class PdfPage
 {
 public:
     Rect paper;
-    Rect bbox;
-    bool bbox_is_cropbox;
     Matrix matrix;
     int major;// of Page Object
     int minor;
@@ -65,9 +64,6 @@ public:
     const char *filename;
     int v_major;
     int v_minor;
-    Rect paper;
-    Rect bbox;
-    bool bbox_is_cropbox;
     //List of PdfPage
     PageList page_list;
     ObjectTable obj_table;

@@ -1,6 +1,6 @@
 /*
     pdfcook : A prepress preparation tool for PDF files
-    Copyright (C) 2021  Arindam Chaudhuri <ksharindam@gmail.com>
+    Copyright (C) 2021-2024  Arindam Chaudhuri <ksharindam@gmail.com>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

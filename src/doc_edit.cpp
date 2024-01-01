@@ -183,11 +183,10 @@ bool doc_pages_translate(PdfDocument &doc, PageRanges &pages, float x, float y)
     for (int page_num : pages) {
         PdfPage &page = doc.page_list[page_num-1];
         Rect page_size = page.pageSize();
-        // this transforms page content, bbox and paper size
+        // this transforms page content, paper size
         page.transform(matrix);
         // we dont want to transform paper so restoring it
         page.paper = page_size;
-        page.bbox_is_cropbox = false;// if cropbox is not removed, translation wont be seen
     }
     return true;
 }
@@ -236,7 +235,6 @@ bool doc_pages_scaleto (PdfDocument &doc, PageRanges &pages, Rect paper,
 
         page.transform(matrix);
         page.paper = paper;
-        page.bbox_is_cropbox = false;
     }
     return true;
 }
